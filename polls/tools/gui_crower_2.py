@@ -36,7 +36,7 @@ def ssh_command(ip_address, username, password, command, key_filename=None, pass
     if command == '/root/scripts/ping.sh':
         window['-OUTPUT-'].update('当前无盘环境:\n' + result)
     elif command == '/root/scripts/mysql.sh 123..com True':
-        window['-OUTPUT-'].update('当前无盘环境:\n' + result)
+        window['-OUTPUT-'].update('当前数据库中IP:\n' + result)
     elif command == '/root/scripts/mysql.sh ' + str(password_mysql):
         window['-FUNC-A-'].update(result)
     else:
@@ -83,7 +83,7 @@ layout_main = [[sg.Menu(menu_def, tearoff=False)],
                [sg.Text('版权所有 ©2023 Crower Inc.。', font=('宋体', 8), pad=((0, 0), (30, 0)))]]
 
 # 创建主窗口
-window = sg.Window('Crower', layout_login, element_justification='center', finalize=True)
+window = sg.Window('运维管理系统', layout_login, element_justification='center', finalize=True)
 
 while True:
     event, values = window.read(timeout=100)
