@@ -1,0 +1,29 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+{#    <link rel="stylesheet" type="text/css" href="{% static 'polls/style.css' %}">#}
+    <title>文件列表</title>
+</head>
+<body>
+<h2>服务器地址：{{ ipaddr }}</h2>
+<h2>路径：{{ path }}</h2>
+{% if dic_list %}
+        {% for f in dic_list %}
+        <form action="" method="get" enctype="multipart/form-data">
+        <a href="{% url 'polls:filenewlist' path_name=path endname=f.filename %}">{{ f }}</a>
+        <input type="submit" value="下载"><br>
+        </form>
+        {% endfor %}
+ {% endif %}
+{% if file_list %}
+{% for f in file_list %}
+        <label>{{ f }}</label>
+    <input type="submit" value="下载"><br>
+    {% endfor %}
+{% endif %}
+<a href="/polls/filelist/" >返回顶部</a><br>
+<a href="/polls/fileexit/" >退出</a><br>
+</body>
+</html>

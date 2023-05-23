@@ -1,0 +1,46 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+    <link href="{% static "polls/prac_one.css"  %}" rel="stylesheet" type="text/css">
+    <link href="{% static "css/bootstrap/bootstrap.min.css" %}" rel="stylesheet" type="text/css" >
+    <link href="{% static "css/adstyle.css" %}" rel="stylesheet" type="text/css" />
+    <link href="{% static "css/userstyle.css" %}" rel="stylesheet" type="text/css" />
+    <link href="{% static "css/code/prism.css" %}" rel="stylesheet" type="text/css" />
+    <script src="{% static "js/code/prism.js" %}"></script>
+{% include 'polls/header.html' %}
+<style>
+    body{
+        background-color: #F2F2F2;
+        margin-left: 220px;
+        margin-top: 60px;
+    }
+</style>
+<body>
+{% include 'polls/menu.html' %}
+
+{% block op %}
+<div class="home">
+    <div class="homepage">
+        <div class="ptbt"><a>运维平台</a></div>
+        <div class="pagename"><a>首页面板</a></div>
+    </div>
+</div>
+<div class="content" align="center">
+    <ol class="breadcrumb"  style="background-color: #FFFFFF; margin-bottom: 15px; width: 95%; height: 50px;">
+{#        <li class="active" style="color: #1c2b36;text-align: left; line-height: 50px;margin-left: 10px; font-size: 15px;"><b>仪表盘 /</b></li>#}
+        <li class="active" style="color: #1c2b36;text-align: left; line-height: 50px;margin-left: 10px; font-size: 15px;"><b>{{ request.session.user_name }} 欢迎回来！</b></li>
+    </ol>
+    <div class="img-responsive" style="width: 95%;height: 50%;background-color: #FFFFFF; margin-bottom: 20px;">
+
+        <img src="https://tse3-mm.cn.bing.net/th/id/OIP-C.ZFeZmWytRtwrRsuEXhSTUAHaEo?pid=ImgDet&rs=1"  alt="狮子">
+    </div>
+</div>
+<div class="content"  id="footer" >
+版权 © liuxuan.com
+</div>
+
+{% endblock %}
+</body>
+</html>

@@ -1,0 +1,70 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- 上述meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+    <!-- Bootstrap CSS -->
+    <link href="{% static 'polls/bootstrap.css' %}" rel="stylesheet">
+{#    <link href="{% static 'polls/login.css' %}" rel="stylesheet"/>#}
+  <link href="{% static "css/adstyle.css"%}" rel="stylesheet" type="text/css" />
+    {% block title %}<title>登录</title>{% endblock %}
+  </head>
+  <body>
+    <div class="admin-ht">
+            <div class="adminBord">
+            {% block form %}
+              <form class="form-login" action="/polls/login/" method="post">
+                {% if login_form.captcha.errors %}
+                    <div id="mysite" class="alert alert-warning">
+                        {{ login_form.captcha.errors }}</div>
+                {% elif message %}
+                    <div id="liveAlertPlaceholder"></div>
+                    <button type="button" class="btn btn-primary" id="liveAlertBtn" onclick="int=window.clearInt
+                    erval(int)">{{ message }}</button>
+                {% endif %}
+
+                  {% csrf_token %}
+                  <h3 class="text-center">欢迎登录</h3>
+
+{#                  <div class="form-group">#}
+{#                    {{ login_form.username.label_tag }}#}
+{#                    {{ login_form.username}}#}
+{#                  </div>#}
+{##}
+{#                  <div class="form-group">#}
+{#                    {{ login_form.password.label_tag }}#}
+{#                    {{ login_form.password }}#}
+{#                  </div>#}
+{##}
+{#                  <div class="form-group">#}
+{#                    {{ login_form.captcha.label_tag }}#}
+{#                    {{ login_form.captcha }}#}
+{#                  </div>#}
+
+                {{ login_form.as_p }}
+                <div >
+                    <button type="submit" class="btn btn-primary float-left" style="margin-left: 50px"><a href="/polls/register/"
+                                                                            style="text-decoration: none; color: #FFFFFF">新用户注册</a></button>
+                  <button type="submit" class="btn btn-primary float-right" style="margin-right: 50px">登录</button>
+                </div>
+
+              </form>
+            {% endblock %}
+            </div>
+    </div> <!-- /container -->
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    {#    以下三者的引用顺序是固定的#}
+    {% block script %}
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.js"></script>
+    <script src="https://cdn.bootcss.com/popper.js/1.15.0/umd/popper.js"></script>
+    <script src="https://cdn.bootcss.com/twitter-bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    {% endblock %}
+
+
+  </body>
+</html>

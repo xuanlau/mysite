@@ -1,0 +1,17 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>结果</title>
+    <link rel="stylesheet" href="{% static 'polls/style.css' %}">
+</head>
+<body>
+<h3>info</h3>
+{% for i in mess %}
+    <p>{{ i }}</p>
+{% endfor %}
+<a href="/polls/logout/" class="text-success "><ins>登出</ins></a>
+<a href="/polls/toupiao/" class="text-success "><ins>投票小程序</ins></a>
+</body>
+</html>

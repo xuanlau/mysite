@@ -1,0 +1,28 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link href="{% static 'polls/login.css' %}" rel="stylesheet"/>
+    <title>文件服务器登录</title>
+</head>
+<body>
+<h3>登录信息</h3>
+<form name="myForm" action="/polls/filelist/" method="post"  enctype="multipart/form-data"> <br>
+    {% csrf_token %}
+    <input type="text" name=hostname id="choice_hostname">
+    <label>:地址</label><br>
+    <input type="text" name=user id="choice_user">
+    <label>:用户</label><br>
+    <input type="password" name=password id="choice_password">
+    <label>:密码</label><br>
+    <input type="file" name="key" id="key_file" >
+    <label>密钥</label><br>
+    <input type="number" name=port id="choice_port" value=22>
+    <label>:端口</label><br><br>
+    <p><input type="submit" value="登录"></p>
+    <input type="reset">
+</form>
+
+</body>
+</html>

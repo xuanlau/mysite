@@ -1,0 +1,91 @@
+html, body {
+    background-color: #9fcdff;
+    height: 100%;
+    font-size: 20px;
+    text-align: center;
+    color: #000000;
+}
+#container  {
+    overflow: auto;
+    height: 100%;
+    /*background-color: #0c2838;*/
+}
+/*#footer  {*/
+/*    background-color: #0f6674;*/
+/*    clear: both;*/
+/*    text-align: center;*/
+/*    height: 100px;*/
+/*}*/
+
+#menu {
+    background-color: #FFD700;
+    height: 800px;
+    width: 150px;
+    float: left;
+}
+
+#content {
+    background-color: #eeeeee;
+
+    height: 800px;
+    width: 500px;
+    float: left;
+    /*style="background-color:#EEEEEE;height:200px;width: 400px;float:left;"*/
+}
+
+button {
+    margin-bottom: 15px;
+}
+
+button a {
+  text-decoration: none;
+}
+
+.select {
+		display: inline-block;
+		width: 300px;
+		position: relative;
+		vertical-align: middle;
+		padding: 0;
+		overflow: hidden;
+		background-color: #fff;
+		color: #555;
+		border: 1px solid #aaa;
+		text-shadow: none;
+		border-radius: 4px;
+		transition: box-shadow 0.25s ease;
+		z-index: 2;
+        float: left;
+        margin-left: 50px;   /* 定义靠近左边div的距离 */
+	}
+
+.select:hover {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.select:before {
+    content: "";
+    position: absolute;
+    width: 0;
+    height: 0;
+    border: 10px solid transparent;
+    border-top-color: #ccc;
+    top: 14px;
+    right: 10px;
+    cursor: pointer;
+    z-index: -2;
+}
+.select select {
+    cursor: pointer;
+    padding: 10px;
+    width: 100%;
+    border: none;
+    background: transparent none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+.select select:focus {
+    outline: none;
+}
+

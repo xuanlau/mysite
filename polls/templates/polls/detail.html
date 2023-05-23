@@ -1,0 +1,27 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>最新</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'polls/style.css' %}">
+</head>
+<body>
+<h1>{{ question.question_text }}</h1>
+{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+<form action="{% url 'polls:vote' question.id %}" method="post">
+{% csrf_token %}
+
+{% for choice in question.choice_set.all %}
+{#    <input type="radio" name="choice" id="choice{{ forloop.counter }}" value="{{ choice.id }}">#}
+    <input type="number" name={{ choice.id }} id="choice{{ forloop.counter }}" value=0>
+    <label for="choice{{ forloop.counter }}">{{ choice.choice_text }}</label>
+    <label>当前 : {{ choice.votes }} RMB</label><br>
+{% endfor %}
+
+<input type="submit" value="提交">
+
+<a href="/polls/toupiao/">返回记账列表</a>
+</form>
+</body>
+</html>

@@ -1,0 +1,66 @@
+{% extends "polls/zhuye.html" %}
+{% block title %}显卡压测{% endblock %}
+{% block word %}显卡压测{% endblock %}
+
+{% block caidan %}
+    <form action="/polls/vcpt/" method="get">
+        <button type="button"  id="sum" style="width: 100px">扫描机器列表</button><br>
+        <button type="button"  id="mdata" style="width: 100px">清空数据库</button><br>
+{#        <button type="button"  >部署显卡压测环境</button><br>#}
+{#        <button type="button"  ><a href="/polls/logout/">登出</a></button>#}
+    </form>
+{% endblock %}
+
+{% block content %}
+<div id="content" >IP列表：<span id="iplist" ></span>
+<p id="list_result"></p><br>
+</div>
+    <div class="select">
+		<select name="cars">
+			<option value="raid1">raid1</option>
+			<option value="raid0">raid0</option>
+			<option value="default" selected>默认</option>
+			<option value="raid5">raid5</option>
+		</select>
+	</div>
+<script src="../../static/js/jquery.min.js">
+// 导入本地js(从线上下载到本地)
+</script>
+<script>
+// ajax 异步加载，只渲染id为iplist的标签的内容
+$(document).ready(function(){
+  $("#sum").click(function(){
+      console.log(1)
+      $('#list_result').empty() /*清空标签内内容*/
+  $.getJSON("{% url 'polls:vcpt' %}", function (ret) {
+      {#$('#iplist').html(ret) 输出到idiplis的标签#}
+
+      if (ret.length > 1) {
+          for (let i = 0; i < ret.length; i++) {
+              $('#list_result').append(' ' + ret[i] + '<br>')
+          }
+
+      }
+      else {
+          $('#list_result').append(' ' + "当前不存在存活机器" + '<br>')
+      }
+  })
+  });
+
+  $("#mdata").click(function (){
+      console.log(2)
+      $('#list_result').empty()  /*清空标签内内容*, empty方法清空，防止内存泄漏，也可以使用$('#list_result').html('');清空*/
+      $.get("{% url 'polls:vcpt' %}", {"password": '123..com'}, function (ret) {
+          {#$('#list_result').append(' ' + ret + '<br>')#}
+          alert(ret)
+      })
+  });
+
+ });
+
+
+
+</script>
+
+
+{% endblock %}

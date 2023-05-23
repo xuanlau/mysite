@@ -1,0 +1,8 @@
+li a {
+    color: red;
+}
+body {
+    background: white url("images/fengjing.jpg") no-repeat;
+    width: 1920px;
+    height: 1080px;
+}

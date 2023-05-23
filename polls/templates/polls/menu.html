@@ -1,0 +1,62 @@
+{% load static %}
+<meta charset="utf-8" />
+<!-- 通用样式 -->
+<link rel="stylesheet" type="text/css" href="{% static "css/public.css" %}">
+<!-- 动态菜单CSS -->
+<link rel="stylesheet" type="text/css" href="{% static "css/menu.css" %}">
+<!-- jquery引入 -->
+<script src="{% static "js/jquery.min.js" %}"></script>
+
+<!-- 动态菜单JS -->
+<script type="text/javascript" src="{% static "js/menu.js" %}"></script>
+<script type="text/javascript" src="{% static "css/bootstrap5/bootstrap.bundle.min.js" %}"></script>
+<div class="middle">
+	<div class="leftMenu">
+		<div class="topMenu">
+			<img class="banshi" src="{% static "img/banshidating.png" %}"/>
+			<p class="menuTitle">运维管理平台</p>
+		</div>
+		<div class="menu_list">
+			<ul>
+				<li class="">
+					<p class="fuMenu"><a href="/polls/index">首页</a></p>
+				</li>
+				<li class="">
+					<p class="fuMenu">无盘主机</p>
+					<img class="xiala" src="{% static "img/xiala.png" %}" />
+					<div class="div1">
+{#						<p class="zcd" id="zcd9">数据添加</p>#}
+                        <p class="zcd" id="zcd10"><a href="/polls/cmdb/serverlist/">主机列表</a></p>
+                        <p class="zcd" id="zcd11"><a href="/polls/cmdb/bzperf/">标准压测</a></p>
+					</div>
+				</li>
+				<li class="">
+					<p class="fuMenu">主机管理</p>
+                    <img class="xiala" src="{% static "img/xiala.png" %}" />
+                    <div class="div1">
+                        <p class="zcd" id="zcd10"><a href="/polls/cmdb/hostadmin/">批量管理</a></p>
+                    </div>
+				</li>
+				<li class="">
+					<p class="fuMenu">监控系统</p>
+					<img class="xiala" src="{% static "img/xiala.png" %}" />
+					<div class="div1">
+                        <p class="zcd" id="zcd19"><a href="{% url 'polls:monitor' %}">健康状态监控</a></p>
+					</div>
+				</li>
+				<li class="">
+					<p class="fuMenu">权限管理</p>
+					<img class="xiala" src="{% static "img/xiala.png" %}" />
+					<div class="div1">
+                        <p class="zcd" id="zcd19"><a href="/polls/user/list/">用户管理</a></p>
+{#						<p class="zcd" id="zcd20"><a href="/polls/user/role/">角色管理</a></p>#}
+{#						<p class="zcd" id="zcd19"><a href="/polls/user/power/">权限管理</a></p>#}
+					</div>
+				</li>
+				<li class="">
+					<p class="fuMenu"><a href="/polls/logout/">退出</a></p>
+				</li>
+			</ul>
+		</div>
+	</div>
+</div>

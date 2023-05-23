@@ -1,0 +1,36 @@
+{% extends "polls/login.html" %}
+
+{% block title %}<title>格式化磁盘</title>{% endblock %}
+
+{% block form %}
+
+ <form class="form-login" action="/polls/formatdisk/" method="post">
+                  {% csrf_token %}
+                  <h3 class="text-center">格式化磁盘</h3>
+                  <div class="form-group">
+                      <label for="number">请输入数字(默认50)：</label>
+{#                    {{ format_disk_form.server_numbers.label }}#}
+                    {{ format_disk_form.server_numbers }}
+                  </div>
+                <div>
+                  <button type="submit" class="btn btn-primary float-md-none">提交</button>
+
+                </div>
+
+ </form>
+
+    <form class="form-text" action="/polls/index/" method="get">
+    <button type="submit" class="btn btn-primary float-right">返回</button>
+    </form>
+{% endblock %}
+
+{% block script %}
+{% if server_numbers %}
+
+<script>
+alert("已提交：{{ server_numbers }}");
+</script>
+
+{% endif %}
+{% endblock %}
+
