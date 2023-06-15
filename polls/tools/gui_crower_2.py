@@ -6,6 +6,7 @@ import PySimpleGUI as sg
 import paramiko
 import gui_thread
 import uuid
+# 一个用于库房人员压测的工具
 
 
 def ssh_command(ip_address, username, password, command, key_filename=None, password_mysql=None):
@@ -20,13 +21,15 @@ def ssh_command(ip_address, username, password, command, key_filename=None, pass
             result = error
             if command == '/root/scripts/mysql.sh ' + password_mysql:
                 result = password_mysql + str(error) + '请再次尝试！'
-                sg.popup(result, title='结果')
+                sg.popup_ok(result, title='结果', button_color='blue', non_blocking=True)
         else:
             result = output
     except Exception as e:
         if command == '/root/scripts/mysql.sh ' + str(password_mysql):
             result = password_mysql + str(e) + '请再次尝试！'
             sg.popup(result, title='结果')
+        else:
+            sg.popup(e, title='结果', non_blocking=True)
         # elif command == '/root/scripts/mysql.sh ' + str(password_mysql):
         #     sg.popup(result, title='结果')
         result = f'Error: {e}'
@@ -55,7 +58,16 @@ layout_login = [[sg.Text('请登录', font=('宋体', 20), pad=((250, 0), (50, 1
 # 定义主界面布局
 menu_def = [['File', ['Exit']],
             ['Help', ['About']]]
+options_list = ['默认', 'raid0', 'raid1', 'noraid']
 layout_main = [[sg.Menu(menu_def, tearoff=False)],
+               [sg.Text('老化环境', font=('微软雅黑', 10), text_color='white', background_color='purple', size=(10, 1),
+                        justification='center')],
+               [sg.Text("系统盘类型", size=(10, 1)), sg.Combo(options_list,
+                                                              size=(40, 1), default_value=options_list[0],
+                                                              key="-OS_TYPE-")],
+               [sg.Text('CPU压测时间'), sg.InputText('', key='input'), sg.Text('秒')],
+               [sg.Text('内存压测时间'), sg.InputText('', key='input'), sg.Text('秒')],
+               [sg.Text('硬盘压测时间'), sg.InputText('', key='input'), sg.Text('秒')],
                # [sg.InputText(key='-SEARCH-', size=(50, 1), background_color='#FFFFFF', text_color='#663399')],
                [sg.Button('扫描无盘环境', button_color=('white', '#663399')), sg.Button('查询当前数据库IP数量',
                 button_color=('white', '#663399')), sg.Button('导出数据库数据(默认当前路径下)',
@@ -84,7 +96,10 @@ layout_main = [[sg.Menu(menu_def, tearoff=False)],
 
 # 创建主窗口
 window = sg.Window('运维管理系统', layout_login, element_justification='center', finalize=True)
-
+win_mysql_active = False
+win_ssh_active = False
+window_mysql_password = ''
+window_ssh = ''
 while True:
     event, values = window.read(timeout=100)
     if event in (None, '退出', 'Exit'):
@@ -93,7 +108,7 @@ while True:
     if event == '登录':
         if values['-USERNAME-'] == 'admin' and values['-PASSWORD-'] == '123..com':
             window.close()
-            window = sg.Window('Crower', layout_main, element_justification='center', finalize=True)
+            window = sg.Window('运维管理系统', layout_main, element_justification='center', finalize=True)
         else:
             sg.popup('用户名或密码错误！')
     if event == '扫描无盘环境':
@@ -133,34 +148,37 @@ while True:
     if event == '切换无盘环境':
         layout_wupan = [[sg.Checkbox('legacy', key='-LEGACY-'), sg.Checkbox('uefi', key='-UEFI-'), sg.Button('提交')],
                [sg.Combo(['centos7.6', 'centos7.9', 'ubuntu20.04.4', 'ubuntu20.04.5'], default_value='centos7.6',
-                         key='-OS-'), sg.Button('提交')],]
-    if event == '清空数据库并备份':
-        result = ''
-        window['-FUNC-A-'].update(result)
+                         key='-OS-'), sg.Button('提交')], ]
+    if event == '清空数据库并备份' and not win_ssh_active:
+        win_mysql_active = True
+        window['-FUNC-A-'].update('')
         layout_mysql_password = [[sg.Text('密码：', size=(10, 1)), sg.InputText(key='-PASSWORD-', password_char='*')],
                                  [sg.Button('提交'), sg.Button('退出')]]
         window_mysql_password = sg.Window('请输入数据库密码',
                                           layout_mysql_password, location=(1200, 300))  # location 定义串口弹出的默认位置
-        while True:
-            event, values = window_mysql_password.read()
-            if event in [None, '退出']:
-                break
-            if event == '提交':
-                password_mysql = values['-PASSWORD-']
-                try:
-                    # result = ssh_command(ip_address='192.168.2.149', username='root', password='123..com', command=
-                    # '/root/scripts/mysql.sh ' + password_mysql)
-                    thread = gui_thread.MyThread(ssh_command, ('192.168.2.149', 'root', '123..com',
-                             '/root/scripts/mysql.sh' + ' ' + password_mysql, None, password_mysql))
-                    thread.setDaemon(True)
-                    thread.start()  # 启动线程
-                except Exception as e:
-                    result = str(password_mysql) + str(e) + '请再次尝试！'
-        window_mysql_password.close()  # 关闭子窗口
+    if win_mysql_active:
+        # while True:  # 子窗口和主窗口都激活的情况下，子窗口不进入自己的死循环！子窗口运行时不影响主窗口的事件点击
+        event, values = window_mysql_password.read(timeout=100)
+        if event in [None, '退出']:
+            # break
+            win_mysql_active = False
+            window_mysql_password.close()  # 关闭子窗口
+        if event == '提交':
+            password_mysql = values['-PASSWORD-']
+            try:
+                # result = ssh_command(ip_address='192.168.2.149', username='root', password='123..com', command=
+                # '/root/scripts/mysql.sh ' + password_mysql)
+                thread = gui_thread.MyThread(ssh_command, ('192.168.2.149', 'root', '123..com',
+                         '/root/scripts/mysql.sh' + ' ' + password_mysql, None, password_mysql))
+                thread.setDaemon(True)
+                thread.start()  # 启动线程
+            except Exception as e:
+                result = str(password_mysql) + str(e) + '请再次尝试！'
     if event == 'clear':
         window['-FUNC-A-'].update('')
     # SSH远程登录并执行命令
-    if event == '执行远程命令(ssh)':
+    if event == '执行远程命令(ssh)' and not win_ssh_active:
+        win_ssh_active = True
         layout_ssh = [[sg.Text('用户名：', size=(8, 1)), sg.InputText(key='-USER-')],
                       [sg.Text('密码：', size=(8, 1)), sg.InputText(key='-PASSWORD-', password_char='*')],
                       [sg.Text('IP地址：', size=(8, 1)), sg.InputText(key='-IP-')],
@@ -170,27 +188,24 @@ while True:
                                      file_types=(('All Files', '*.*'), ('Text Files', '*.txt')), size=(8, 1))],
                       [sg.Button('提交'), sg.Button('退出')]]
         window_ssh = sg.Window('SSH远程登录', layout_ssh)
-        while True:
-            event_ssh, values_ssh = window_ssh.read()
-            if event_ssh in [None, '退出']:
-                break
-            if event_ssh == '提交':
-                window['-SSH-RESULT-'].update('')
-                window['-SSH-RESULT-'].update('正在执行远程命令...\n')
-                username = values_ssh['-USER-']
-                password = values_ssh['-PASSWORD-']
-                ip = values_ssh['-IP-']
-                command = values_ssh['-COMMAND-']
-                key_filename = values_ssh['-密钥-']
-                # 执行SSH命令并返回结果
-                # 这里需要使用实际的SSH库和函数来执行SSH登录并执行命令
-                # 将输出到文本框的操作封装到函数中，启动子线程时直接将结果输出到文本框
-                try:
-                    thread = gui_thread.MyThread(ssh_command, (ip, username, password, command))
-                    # 下面是设置守护线程：如果在程序中将子线程设置为守护线程，则该子线程会在主线程结束时自动退出
-                    thread.setDaemon(True)
-                    thread.start()  # 启动线程并将结果输出到文本框
-                except Exception as e:
-                    result = e
-                # window['-SSH-RESULT-'].print(result)
-        window_ssh.close()  # 关闭子窗口
+    if win_ssh_active:
+        event_ssh, values_ssh = window_ssh.read(timeout=100)
+        if event_ssh in [None, '退出']:
+            win_ssh_active = False
+            window_ssh.close()  # 关闭子窗口
+        if event_ssh == '提交':
+            window['-SSH-RESULT-'].update('')
+            window['-SSH-RESULT-'].update('正在执行远程命令...\n')
+            username = values_ssh['-USER-']
+            password = values_ssh['-PASSWORD-']
+            ip = values_ssh['-IP-']
+            command = values_ssh['-COMMAND-']
+            key_filename = values_ssh['-密钥-']
+            # 执行SSH命令并返回结果
+            # 这里需要使用实际的SSH库和函数来执行SSH登录并执行命令
+            # 将输出到文本框的操作封装到函数中，启动子线程时直接将结果输出到文本框
+            thread = gui_thread.MyThread(ssh_command, (ip, username, password, command))
+            # 下面是设置守护线程：如果在程序中将子线程设置为守护线程，则该子线程会在主线程结束时自动退出
+            thread.setDaemon(True)
+            thread.start()  # 启动线程并将结果输出到文本框
+            # window['-SSH-RESULT-'].print(result)
