@@ -42,7 +42,7 @@ layout = [[sg.Text("消消乐小游戏")],
           [sg.Text("请在下面输入两个坐标，如“2,3 4,5”，空格隔开（坐标从0开始）。")],
           [sg.InputText(key="-POS1-", size=(6, 1)), sg.InputText(key="-POS2-", size=(6, 1)), sg.Button("消除")],
           [sg.Button("重新开始游戏"), sg.Button("退出游戏")]]
-input_rows = [[sg.Input(size=(15,1), pad=(0,0)) for col in range(4)] for row in range(10)]
+input_rows = [[sg.Input(size=(15, 1), pad=(0,0)) for col in range(4)] for row in range(10)]
 # 创建GUI窗口并运行游戏
 window = sg.Window("消消乐小游戏", layout + input_rows)
 while True:
