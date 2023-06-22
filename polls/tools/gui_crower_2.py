@@ -144,6 +144,11 @@ window_mysql_password = ''
 window_ssh = ''
 window_pxe_custom = ''
 custom_data = []
+# layout_pxe_custom = [
+#     # [sg.Button('添加一行数据'), sg.Column([[sg.Input(), sg.Input()] for i in range(len(custom_data) + 1)])],# 旧
+#     [sg.Button('添加一行数据')], [sg.Text('挂载点', size=10), sg.Text('分区大小', size=10)],
+#     [[sg.Input('', size=10), sg.Input('', size=10), sg.Button('删除')] for i in range(len(custom_data) + 1)],
+# ]
 while True:
     event, values = window.read(timeout=100)
     if event in (None, '退出', 'Exit'):
@@ -159,7 +164,9 @@ while True:
     if event == '添加自定义挂载路径' and not window_pxe_custom_active:
         window_pxe_custom_active = True
         layout_pxe_custom = [
-            [sg.Button('添加一行数据'), [sg.Column([[sg.Input(), sg.Input()] for i in range(len(custom_data) + 1)])]],
+            # [sg.Button('添加一行数据'), sg.Column([[sg.Input(), sg.Input()] for i in range(len(custom_data) + 1)])],# 旧
+            [sg.Button('添加一行数据')], [sg.Text('挂载点', size=10), sg.Text('分区大小', size=10)],
+            [[sg.Input('', size=10), sg.Input('', size=10), sg.Button('删除', )] for i in range(len(custom_data) + 1)],
         ]
         # [sg.Text('挂载点'), sg.Text('分区大小')]
         window_pxe_custom = sg.Window('PXE高级选项', layout_pxe_custom, finalize=True)
@@ -170,11 +177,23 @@ while True:
             window_pxe_custom.close()  # 关闭子窗口
         if event_pxe == '添加一行数据':
             custom_data.append('')
-            layout_pxe_custom = [
-                [sg.Button('添加一行数据'),
-                 [sg.Column([[sg.Input(), sg.Input()] for i in range(len(custom_data) + 1)])]],
-            ]
             window_pxe_custom.close()
+            layout_pxe_custom = [
+                # [sg.Button('添加一行数据'), sg.Column([[sg.Input(), sg.Input()] for i in range(len(custom_data) + 1)])],# 旧
+                [sg.Button('添加一行数据')], [sg.Text('挂载点', size=10), sg.Text('分区大小', size=10)],
+                [[sg.Input('', size=10), sg.Input('', size=10), sg.Button('删除')] for i in
+                 range(len(custom_data) + 1)],
+            ]
+            window_pxe_custom = sg.Window('PXE高级选项', layout_pxe_custom, finalize=True)
+        if event_pxe == '删除':
+            del custom_data[-1]
+            window_pxe_custom.close()
+            layout_pxe_custom = [
+                # [sg.Button('添加一行数据'), sg.Column([[sg.Input(), sg.Input()] for i in range(len(custom_data) + 1)])],# 旧
+                [sg.Button('添加一行数据')], [sg.Text('挂载点', size=10), sg.Text('分区大小', size=10)],
+                [[sg.Input('', size=10), sg.Input('', size=10), sg.Button('删除')] for i in
+                 range(len(custom_data) + 1)],
+            ]
             window_pxe_custom = sg.Window('PXE高级选项', layout_pxe_custom, finalize=True)
     if event == '扫描无盘环境':
         window['-OUTPUT-'].update('')
