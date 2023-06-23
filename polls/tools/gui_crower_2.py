@@ -298,3 +298,10 @@ while True:
             thread.setDaemon(True)
             thread.start()  # 启动线程并将结果输出到文本框
             # window['-SSH-RESULT-'].print(result)
+
+
+
+
+
+###   xl is here
+
