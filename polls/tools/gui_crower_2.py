@@ -256,7 +256,15 @@ while True:
             win_xianka_active = False
             window_xianka.close()  # 关闭子窗口
         if event_xianka == '测试IP连通性':
-            print(values_xianka['-xiankaip-'])
+            end_xian_ip = ''
+            xianka_iplist = values_xianka['-xiankaip-'].split('\t')
+            for xianla_ip in xianka_iplist:
+                end_xian_ip += xianla_ip + ','
+            print(end_xian_ip)
+            thread = gui_thread.MyThread(ssh_command, ('192.168.2.149', 'root', '123..com',
+                                                       '/root/scripts/xianka_ip.py' + ' ' + end_xian_ip))
+            thread.setDaemon(True)
+            thread.start()  # 启动线程
     if event == '清空数据库并备份' and not win_ssh_active:
         win_mysql_active = True
         window['-FUNC-A-'].update('')
