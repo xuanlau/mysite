@@ -15,8 +15,6 @@ import uuid
 # xw is still here
 
 
-
-
 def ssh_command(ip_address, username, password, command, key_filename=None, password_mysql=None):
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -118,7 +116,7 @@ layout_main = [[sg.Menu(menu_def, tearoff=False)],
                                                                                             'white', '#663399')),
                 sg.Button('导出数据库数据(默认当前路径下)',
                           button_color=('white', '#663399'))],
-               [sg.Multiline(key='-OUTPUT-', size=(80, 10), autoscroll=True)],
+               [sg.Multiline(key='-OUTPUT-', size=(80, 8), autoscroll=True)],
                # 文本选择器，先注释
                # [sg.Column([
                #     [sg.Text('导出数据库数据')],
@@ -130,6 +128,7 @@ layout_main = [[sg.Menu(menu_def, tearoff=False)],
                #     [sg.FilesBrowse(key='-MULTIFACTORIALLY-', file_types=(('Text Files', '*.txt'), ('All Files', '*.*')),
                #                     size=(10, 1)), sg.InputText(key='-MULTI FILEPATH-', size=(50, 1), disabled=False)]
                # ], element_justification='center', vertical_alignment='top')],  # justification='right' 靠右
+               [sg.Button('显卡环境部署/压测', button_color=('white', '#663399'))],
                [sg.Column(layout=[[sg.Button('清空数据库并备份', size=(20, 1))],
                                   [sg.Multiline(key='-FUNC-A-', size=(40, 6))]], element_justification='left'),
                 sg.Column(layout=[[sg.Button('执行远程命令(ssh)', size=(20, 1))], [sg.Multiline(key='-SSH-RESULT-',
@@ -146,9 +145,11 @@ window = sg.Window('运维管理系统', layout_login, finalize=True)
 win_mysql_active = False
 win_ssh_active = False
 window_pxe_custom_active = False
+win_xianka_active = False
 window_mysql_password = ''
 window_ssh = ''
 window_pxe_custom = ''
+window_xianka = ''
 custom_data = []
 # layout_pxe_custom = [
 #     # [sg.Button('添加一行数据'), sg.Column([[sg.Input(), sg.Input()] for i in range(len(custom_data) + 1)])],# 旧
@@ -159,7 +160,6 @@ while True:
     event, values = window.read(timeout=100)
     if event in (None, '退出', 'Exit'):
         break
-
     # 登录验证
     if event == '登录':
         if values['-USERNAME-'] == 'admin' and values['-PASSWORD-'] == '123..com':
@@ -240,6 +240,22 @@ while True:
                         [sg.Combo(['centos7.6', 'centos7.9', 'ubuntu20.04.4', 'ubuntu20.04.5'],
                                   default_value='centos7.6',
                                   key='-OS-'), sg.Button('提交')], ]
+    if event == '显卡环境部署/压测':
+        win_xianka_active = True
+        layout_xianka = [[sg.Column(
+            layout=[[sg.Multiline(key='-xiankaip-', size=(40, 20))],
+                    [sg.Button('测试IP连通性', size=(10, 1)), sg.Button('部署显卡环境', size=(10, 1)),
+                     sg.Button('显卡压测', size=(10, 1))]],
+            element_justification='left')]]
+        window_xianka = sg.Window('请输入压测节点IP', layout_xianka)
+    if win_xianka_active:
+        event_xianka, values_xianka = window_xianka.read(timeout=100)
+        if event_xianka in [None, '退出']:
+            # break
+            win_xianka_active = False
+            window_xianka.close()  # 关闭子窗口
+        if event_xianka == '测试IP连通性':
+            print(values_xianka['-xiankaip-'])
     if event == '清空数据库并备份' and not win_ssh_active:
         win_mysql_active = True
         window['-FUNC-A-'].update('')
@@ -301,5 +317,3 @@ while True:
             thread.setDaemon(True)
             thread.start()  # 启动线程并将结果输出到文本框
             # window['-SSH-RESULT-'].print(result)
-
-
