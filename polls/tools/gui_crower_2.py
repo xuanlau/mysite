@@ -151,6 +151,7 @@ window_mysql_password = ''
 window_ssh = ''
 window_pxe_custom = ''
 window_xianka = ''
+end_xian_ip = ''
 custom_data = []
 # layout_pxe_custom = [
 #     # [sg.Button('添加一行数据'), sg.Column([[sg.Input(), sg.Input()] for i in range(len(custom_data) + 1)])],# 旧
@@ -256,13 +257,16 @@ while True:
             win_xianka_active = False
             window_xianka.close()  # 关闭子窗口
         if event_xianka == '测试IP连通性':
-            end_xian_ip = ''
-            xianka_iplist = values_xianka['-xiankaip-'].split('\t')
-            for xianla_ip in xianka_iplist:
-                end_xian_ip += xianla_ip + ','
+            xianka_iplist = values_xianka['-xiankaip-'].split('\n')
+            print(len(xianka_iplist))
+            for i in xianka_iplist:
+                print(i)
+                if i:
+                    i = i + ','
+                end_xian_ip += i
             print(end_xian_ip)
             thread = gui_thread.MyThread(ssh_command, ('192.168.2.149', 'root', '123..com',
-                                                       '/root/scripts/xianka_ip.py' + ' ' + end_xian_ip))
+                                                       'python3' + '/root/scripts/xianka_ip.py' + ' ' + end_xian_ip))
             thread.setDaemon(True)
             thread.start()  # 启动线程
     if event == '清空数据库并备份' and not win_ssh_active:
