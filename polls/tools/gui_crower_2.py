@@ -48,6 +48,7 @@ def ssh_command(ip_address, username, password, command, key_filename=None, pass
         window['-OUTPUT-'].update('当前数据库中IP:\n' + result)
     elif command == '/root/scripts/mysql.sh ' + str(password_mysql):
         window['-FUNC-A-'].update(result)
+        # window_xianka['-xiankaip-'].update()
     else:
         window['-SSH-RESULT-'].print(result)
     return result

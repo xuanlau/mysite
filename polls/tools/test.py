@@ -1,23 +1,54 @@
-import openpyxl
+import PySimpleGUI as sg
+import queue
+import threading
+import time
 
-# 创建一个新的Excel工作簿
-wb = openpyxl.Workbook()
 
-# 使用默认活动表（sheet1）
-ws = wb.active
+# 模拟后端程序并输出日志
+def simulate_backend_logging(the_queue):
+    for i in range(10):
+        msg = f'log message {i}'
+        the_queue.put(msg)
+        time.sleep(1)
 
-# 打开txt文件并读取其中的内容
-with open(r'C:\Users\11298\Desktop\1.log', 'r') as f:
-    lines = f.readlines()
 
-# 遍历每一行数据
-for i, line in enumerate(lines):
-    # 以制表符为分隔符，将每一行数据分割成多个字段，并返回一个列表
-    fields = line.split()
+# 创建GUI界面
+layout = [
+    [sg.Multiline(size=(80, 30), key='-LOG-', autoscroll=True)],
+    [sg.Button('Start'), sg.Button('Stop')],
+]
 
-    # 将每个字段填写到对应的单元格中
-    for j, field in enumerate(fields):
-        ws.cell(row=i+1, column=j+1, value=field)
 
-# 将表格保存为Excel文件
-wb.save(r'C:\Users\11298\Desktop\1.xlsx')
+# 开始模拟后端程序
+def run_backend(queue):
+    thread = threading.Thread(target=simulate_backend_logging, args=(queue,))
+    thread.start()
+
+
+# 创建GUI窗口并进入事件循环
+queue = queue.Queue()
+window = sg.Window(title='Log Viewer', layout=layout, finalize=True)
+while True:
+    event, values = window.read(timeout=300)
+
+    # 检查是否点击关闭按钮
+    if event == sg.WIN_CLOSED:
+        break
+
+    # 用户点击Start按钮
+    if event == 'Start':
+        run_backend(queue)
+
+    # 用户点击Stop按钮
+    if event == 'Stop':
+        break
+
+    # 从日志队列中读取数据并显示到GUI窗口中
+    while True:
+        try:
+            msg = queue.get_nowait()
+            window['-LOG-'].print(msg)
+        except:
+            break
+
+window.close()
