@@ -3,6 +3,7 @@ import time
 import sys
 import xlwt
 import pymysql as mysql
+import paramiko
 
 # 当前的python版本
 # if sys.version_info >= (3, 0):
@@ -82,9 +83,9 @@ class MyThread(threading.Thread):
         self.result = []
 
     def run(self):
-
         # self.result = self.func(*self.args)
         self.func(*self.args)
+
     def get_result(self):
         try:
             return self.result
@@ -92,4 +93,26 @@ class MyThread(threading.Thread):
             return None
 
 
+def my_backend_logging(q, command):
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        client.connect(hostname='192.168.2.149', username='root', password='123..com', timeout=1)
+        stdin, stdout, stderr = client.exec_command(command)
+        if stdout:
+            for line in iter(stdout.readline, ""):
+                q.put(line.replace('[0m', '').replace('[32m', ''))
+        else:
+            for line in iter(stderr.readline, ""):
+                q.put(line)
+    except Exception as e:
+        q.put(e)
+    finally:
+        q.put('测试结束')
+        client.close()
 
+
+def run_backend(queue, com):
+    thread = threading.Thread(target=my_backend_logging, args=(queue, com))
+    thread.setDaemon(True)
+    thread.start()
