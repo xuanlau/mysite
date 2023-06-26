@@ -238,8 +238,9 @@ while True:
         win_xianka_active = True
         layout_xianka = [[sg.Column(
             layout=[[sg.Multiline(key='-xiankaip-', size=(80, 30))],
-                    [sg.Button('测试IP连通性', size=(12, 1)), sg.Button('部署显卡环境', size=(12, 1)),
-                     sg.Button('显卡压测', size=(12, 1)), sg.Button('环境检查', size=(12, 1)),
+                    [sg.Button('提交IP', size=(10, 1)), sg.Button('测试IP连通性', size=(10, 1)),
+                     sg.Button('部署显卡环境', size=(10, 1), disabled=True),sg.Button('环境检查', size=(10, 1)),
+                     sg.Button('显卡压测', size=(10, 1)),
                      sg.Button('开始定时收集日志', size=(12, 1))]], element_justification='left')]]
         window_xianka = sg.Window('请输入压测节点IP', layout_xianka)
     if win_xianka_active:
@@ -248,6 +249,16 @@ while True:
             # break
             win_xianka_active = False
             window_xianka.close()  # 关闭子窗口
+        if event_xianka == '提交IP':
+            end_xian_ip = ''
+            xianka_iplist = values_xianka['-xiankaip-'].split('\n')  # 将文本框中的IP格式化为列表
+            for i in xianka_iplist:  # 拼接指定格式的字符串 ip,ip,ip...
+                if i:
+                    i = i + ','
+                end_xian_ip += i
+            window_xianka['-xiankaip-'].update('')
+            com = 'python3' + ' ' + '/root/scripts/xianka_ip.py' + ' ' + 'ip' + ' ' + end_xian_ip
+            gui_thread.run_backend(q, com)
         if event_xianka == '测试IP连通性':
             end_xian_ip = ''
             xianka_iplist = values_xianka['-xiankaip-'].split('\n')  # 将文本框中的IP格式化为列表
@@ -256,21 +267,20 @@ while True:
                     i = i + ','
                 end_xian_ip += i
             window_xianka['-xiankaip-'].update('')
-            com = 'python3' + ' ' + '/root/scripts/xianka_ip.py' + ' ' + end_xian_ip + ' ' + ';'\
-                  + '/root/scripts/for.sh u ss ls'  # 将两条命令拼接
+            com = '/root/scripts/for.sh u ss ls'  # 将两条命令拼接
             gui_thread.run_backend(q, com)
         if event_xianka == '部署显卡环境':
             # com = '/root/scripts/for.sh u sc /root/aleo/NVIDIA-3090-Linux-x86_64-515.57.run'
             com = 'echo OK'
             gui_thread.run_backend(q, com)
         if event_xianka == '环境检查':
-            com = "/root/scripts/for.sh u ss 'nvidia-smi > /dev/null || echo dada'"
+            com = "/root/scripts/for.sh u ss 'nvidia-smi > /dev/null || echo 驱动安装异常'"
             gui_thread.run_backend(q, com)
         if event_xianka == '显卡压测':
             com = "/root/scripts/for.sh u ss 'cd gpu_burn/  ; nohup ./gpu_burn 7200 > gpu.log 2>&1 &'"
             gui_thread.run_backend(q, com)
         if event_xianka == '开始定时收集日志':
-            com = '/root/scripts/for.sh u x s'
+            com = "/root/scripts/for.sh u x s"
             gui_thread.run_backend(q, com)
         while True:
             try:

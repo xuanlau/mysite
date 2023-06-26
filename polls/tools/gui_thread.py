@@ -114,5 +114,5 @@ def my_backend_logging(q, command):
 
 def run_backend(queue, com):
     thread = threading.Thread(target=my_backend_logging, args=(queue, com))
-    thread.setDaemon(True)
+    thread.setDaemon(True)  # 设置守护进程，主进程退出后，线程自动退出
     thread.start()
