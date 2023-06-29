@@ -47,13 +47,10 @@ def ssh_command(ip_address, username, password, command, key_filename=None, pass
 
 
 # 定义登录界面布局
-
-
 layout_login = [[sg.Text('请登录', font=('宋体', 20), pad=((250, 0), (50, 10)))],
                 [sg.Text('用户名：', size=(8, 1)), sg.InputText(key='-USERNAME-')],
                 [sg.Text('密码：', size=(8, 1)), sg.InputText(key='-PASSWORD-', password_char='*')],
                 [sg.Button('登录', bind_return_key=True), sg.Button('退出')]]
-
 # 定义主界面布局
 menu_def = [['File', ['Exit']],
             ['Help', ['About']]]
@@ -106,9 +103,9 @@ layout_main = [[sg.Menu(menu_def, tearoff=False)],
                # [sg.InputText(key='-SEARCH-', size=(50, 1), background_color='#FFFFFF', text_color='#663399')],
                [sg.Button('扫描无盘环境', button_color=('white', '#663399')), sg.Button('查询当前数据库IP数量',
                                                                                         button_color=(
-                                                                                            'white', '#663399')),
-                sg.Button('导出数据库数据(默认当前路径下)',
-                          button_color=('white', '#663399'))],
+                                                                                        'white', '#663399')),
+                sg.Button('导出数据库数据(默认当前路径下)', button_color=('white', '#663399')),
+                sg.Button('显卡环境部署/压测', button_color=('white', '#663399'))],
                [sg.Multiline(key='-OUTPUT-', size=(80, 8), autoscroll=True)],
                # 文本选择器，先注释
                # [sg.Column([
@@ -121,7 +118,6 @@ layout_main = [[sg.Menu(menu_def, tearoff=False)],
                #     [sg.FilesBrowse(key='-MULTIFACTORIALLY-', file_types=(('Text Files', '*.txt'), ('All Files', '*.*')),
                #                     size=(10, 1)), sg.InputText(key='-MULTI FILEPATH-', size=(50, 1), disabled=False)]
                # ], element_justification='center', vertical_alignment='top')],  # justification='right' 靠右
-               [sg.Button('显卡环境部署/压测', button_color=('white', '#663399'))],
                [sg.Column(layout=[[sg.Button('清空数据库并备份', size=(20, 1))],
                                   [sg.Multiline(key='-FUNC-A-', size=(40, 6))]], element_justification='left'),
                 sg.Column(layout=[[sg.Button('执行远程命令(ssh)', size=(20, 1))], [sg.Multiline(key='-SSH-RESULT-',
@@ -132,7 +128,6 @@ layout_main = [[sg.Menu(menu_def, tearoff=False)],
                         '导出到当前路径下。\n6、更改PXE系统功能暂不可用', font=('宋体', 13),
                         pad=((0, 0), (30, 0)), text_color='red')],
                [sg.Text('版权所有 ©2023 Crower Inc.。', font=('宋体', 8), pad=((0, 0), (30, 0)))]]
-
 # 创建主窗口
 window = sg.Window('运维管理系统', layout_login, finalize=True)
 win_mysql_active = False
@@ -145,11 +140,6 @@ window_pxe_custom = ''
 window_xianka = ''
 q = queue.Queue()
 custom_data = []
-# layout_pxe_custom = [
-#     # [sg.Button('添加一行数据'), sg.Column([[sg.Input(), sg.Input()] for i in range(len(custom_data) + 1)])],# 旧
-#     [sg.Button('添加一行数据')], [sg.Text('挂载点', size=10), sg.Text('分区大小', size=10)],
-#     [[sg.Input('', size=10), sg.Input('', size=10), sg.Button('删除')] for i in range(len(custom_data) + 1)],
-# ]
 while True:
     event, values = window.read(timeout=100)
     if event in (None, '退出', 'Exit'):
@@ -237,11 +227,11 @@ while True:
     if event == '显卡环境部署/压测':
         win_xianka_active = True
         layout_xianka = [[sg.Column(
-            layout=[[sg.Multiline(key='-xiankaip-', size=(80, 30))],
-                    [sg.Button('提交IP', size=(10, 1)), sg.Button('测试IP连通性', size=(10, 1)),
-                     sg.Button('部署显卡环境', size=(10, 1), disabled=True),sg.Button('环境检查', size=(10, 1)),
-                     sg.Button('显卡压测', size=(10, 1)),
-                     sg.Button('开始定时收集日志', size=(12, 1))]], element_justification='left')]]
+            layout=[[sg.Multiline(key='-xiankaip-', size=(80, 30), text_color='purple', disabled=True)],
+                    [sg.Button('提交IP', size=(8, 1)), sg.Button('测试IP连通性', size=(10, 1)),
+                     sg.Button('部署显卡环境', size=(10, 1), disabled=True), sg.Button('环境检查', size=(8, 1)),
+                     sg.Button('显卡压测', size=(8, 1)),
+                     sg.Button('开始定时收集日志', size=(14, 1))]], element_justification='left')]]
         window_xianka = sg.Window('请输入压测节点IP', layout_xianka)
     if win_xianka_active:
         event_xianka, values_xianka = window_xianka.read(timeout=100)

@@ -26,6 +26,7 @@ def create_xlsx(info):
 
 
 def write_list_to_file(lst):
+    # 写入IP到文件里
     with open('/root/scripts/ip', 'w') as f:
         for item in lst:
             f.write('{}\n'.format(item))
@@ -41,5 +42,5 @@ if __name__ == '__main__':
         info = args[2]
         create_xlsx(info)
     else:
-        print('err')
+        print('err, there are some errors, check it please!')
         sys.exit(0)
