@@ -54,7 +54,7 @@ layout_login = [[sg.Text('请登录', font=('宋体', 20), pad=((250, 0), (50, 1
 # 定义主界面布局
 menu_def = [['File', ['Exit']],
             ['Help', ['About']]]
-raid_options_list = ['默认', 'raid0', 'raid1', 'noraid']
+raid_options_list = ['default', 'raid0', 'raid1', 'noraid']
 os_option_list = ['centos7.6', 'ubuntu20.04', 'debian9.13']
 bios_option_list = ['legacy', 'uefi']
 yace_size = (13, 1)
@@ -81,29 +81,25 @@ layout_pxe = [[sg.Text('PXE环境', font=('微软雅黑', 10), text_color='white
 args_dict = {'/: ': 'r_input', '/boot: ': 'boot_input', 'swap: ': 'swap_input'}
 for k, v in args_dict.items():
     layout_pxe.append(create_custom_(k, v))
-layout_pxe.append([sg.Button('提交PXE数据', size=yace_size), sg.Button('添加自定义挂载路径')])
+layout_pxe.append([sg.Button('提交PXE数据', size=yace_size, disabled=True), sg.Button('添加自定义挂载路径')])
 # layout_main必须为列表，且列表中的每一个元素都必须为可迭代的列表或者切片
 layout_main = [[sg.Menu(menu_def, tearoff=False)],
                # sg.Column 方法，提供了控制整体元素位置的参数：justification
                [sg.Column(
                    layout=[[sg.Text('老化环境', font=('微软雅黑', 10), text_color='white', background_color='purple')],
                            [sg.Text("系统盘类型", size=yace_size), sg.Combo(raid_options_list, size=yace_size,
-                                                                            default_value=raid_options_list[0],
-                                                                            key="-RAID_TYPE-"), sg.Text('')],
+                                                  default_value=raid_options_list[0], key="-RAID_TYPE-"), sg.Text('')],
                            [sg.Text('CPU压测时间', size=yace_size),
-                            sg.InputText('', key='cpu_input', size=yace_size),
-                            sg.Text('秒')],
+                            sg.Input('', key='cpu_input', size=yace_size, pad=(0, 0)), sg.Text('秒', pad=(0, 0))],
                            [sg.Text('内存压测时间', size=yace_size),
-                            sg.InputText('', key='mem_input', size=yace_size), sg.Text('秒')],
+                            sg.Input('', key='mem_input', size=yace_size), sg.Text('秒')],
                            [sg.Text('硬盘压测时间', size=yace_size),
-                            sg.InputText('', key='disk_input', size=yace_size), sg.Text('秒')],
-                           [sg.Button('提交老化数据', size=yace_size)]],
-                   justification='left'), sg.Column(
-                   layout=layout_pxe, justification='right')],
+                            sg.Input('', key='disk_input', size=yace_size), sg.Text('秒')],
+                           [sg.Button('提交老化数据', size=yace_size, disabled=True)]],  # disabled=True使得按钮不可点击
+                   justification='left'), sg.Column(layout=layout_pxe, justification='right')],
                # [sg.InputText(key='-SEARCH-', size=(50, 1), background_color='#FFFFFF', text_color='#663399')],
                [sg.Button('扫描无盘环境', button_color=('white', '#663399')), sg.Button('查询当前数据库IP数量',
-                                                                                        button_color=(
-                                                                                        'white', '#663399')),
+                        button_color=('white', '#663399')),
                 sg.Button('导出数据库数据(默认当前路径下)', button_color=('white', '#663399')),
                 sg.Button('显卡环境部署/压测', button_color=('white', '#663399'))],
                [sg.Multiline(key='-OUTPUT-', size=(80, 8), autoscroll=True)],
@@ -140,6 +136,14 @@ window_pxe_custom = ''
 window_xianka = ''
 q = queue.Queue()
 custom_data = []
+
+
+def create_custom(custom_data):
+    return [
+            # [sg.Button('添加一行数据'), sg.Column([[sg.Input(), sg.Input()] for i in range(len(custom_data) + 1)])],# 旧
+            [sg.Button('添加一行数据')], [sg.Text('挂载点', size=10), sg.Text('分区大小', size=10)],
+            [[sg.Input('', size=10), sg.Input('', size=10), sg.Button('删除', )] for i in range(len(custom_data) + 1)],
+        ]
 while True:
     event, values = window.read(timeout=100)
     if event in (None, '退出', 'Exit'):
@@ -148,16 +152,26 @@ while True:
     if event == '登录':
         if values['-USERNAME-'] == 'admin' and values['-PASSWORD-'] == '123..com':
             window.close()
+            # 登录验证成功后，渲染新的界面
             window = sg.Window('运维管理系统', layout_main, element_justification='center', finalize=True)
         else:
             sg.popup('用户名或密码错误！')
+    if event == '提交老化数据':
+        yace_data = [values['-RAID_TYPE-'], values['cpu_input'], values['mem_input'], values['disk_input']]
+        # 拼接老化环境数据, 使用.format方法格式化数据，丝滑
+        com = '/root/scripts/replace.sh {} {} {} {}'.format(yace_data[0], yace_data[1], yace_data[2], yace_data[3])
+        window['-OUTPUT-'].print(com)
+        gui_thread.run_backend(q, com)
+    if event == '提交PXE数据':
+        # 拼接所有PXE装机所需的数据，目前还剩自定义挂载的数据
+        pxe_data = [values['-OS_TYPE-'], values['BIOS_TYPE'], values['pxe_password'], values['r_input'],
+                    values['boot_input'], values['swap_input'], ]
+        com = '/root/scripts/pxe.sh -o ubuntu20.04.5 - B legacy -p 123..com ' \
+              '-r 1 -b 1 -s 0 -c "/home:200 /demaxiya:300"'
+        window['-OUTPUT-'].print(com)
     if event == '添加自定义挂载路径' and not window_pxe_custom_active:
         window_pxe_custom_active = True
-        layout_pxe_custom = [
-            # [sg.Button('添加一行数据'), sg.Column([[sg.Input(), sg.Input()] for i in range(len(custom_data) + 1)])],# 旧
-            [sg.Button('添加一行数据')], [sg.Text('挂载点', size=10), sg.Text('分区大小', size=10)],
-            [[sg.Input('', size=10), sg.Input('', size=10), sg.Button('删除', )] for i in range(len(custom_data) + 1)],
-        ]
+        layout_pxe_custom = create_custom(custom_data)
         # [sg.Text('挂载点'), sg.Text('分区大小')]
         window_pxe_custom = sg.Window('PXE高级选项', layout_pxe_custom, finalize=True)
     if window_pxe_custom_active:
@@ -166,37 +180,33 @@ while True:
             window_pxe_custom_active = False
             window_pxe_custom.close()  # 关闭子窗口
         if event_pxe == '添加一行数据':
+            window_pxe_custom.close()
             custom_data.append('')
-            window_pxe_custom.close()
-            layout_pxe_custom = [
-                # [sg.Button('添加一行数据'), sg.Column([[sg.Input(), sg.Input()] for i in range(len(custom_data) + 1)])],# 旧
-                [sg.Button('添加一行数据')], [sg.Text('挂载点', size=10), sg.Text('分区大小', size=10)],
-                [[sg.Input('', size=10), sg.Input('', size=10), sg.Button('删除')] for i in
-                 range(len(custom_data) + 1)],
-            ]
+            layout_pxe_custom = create_custom(custom_data)
             window_pxe_custom = sg.Window('PXE高级选项', layout_pxe_custom, finalize=True)
+            # window_pxe_custom.close()
+            # layout_pxe_custom = [
+            #     # [sg.Button('添加一行数据'), sg.Column([[sg.Input(), sg.Input()] for i in range(len(custom_data) + 1)])],# 旧
+            #     [sg.Button('添加一行数据')], [sg.Text('挂载点', size=10), sg.Text('分区大小', size=10)],
+            #     [[sg.Input('', size=10), sg.Input('', size=10), sg.Button('删除')] for i in
+            #      range(len(custom_data) + 1)],
+            # ]
+            # window_pxe_custom = sg.Window('PXE高级选项', layout_pxe_custom, finalize=True)
         if event_pxe == '删除':
-            del custom_data[-1]
-            window_pxe_custom.close()
-            layout_pxe_custom = [
-                # [sg.Button('添加一行数据'), sg.Column([[sg.Input(), sg.Input()] for i in range(len(custom_data) + 1)])],# 旧
-                [sg.Button('添加一行数据')], [sg.Text('挂载点', size=10), sg.Text('分区大小', size=10)],
-                [[sg.Input('', size=10), sg.Input('', size=10), sg.Button('删除')] for i in
-                 range(len(custom_data) + 1)],
-            ]
-            window_pxe_custom = sg.Window('PXE高级选项', layout_pxe_custom, finalize=True)
+            if len(custom_data) == 1:
+                print('error')
+            else:
+                window_pxe_custom.close()
+                custom_data.pop(len(custom_data)-1)
+                layout_pxe_custom = create_custom(custom_data)
+                window_pxe_custom = sg.Window('PXE高级选项', layout_pxe_custom, finalize=True)
     if event == '扫描无盘环境':
         window['-OUTPUT-'].update('')
         window['-OUTPUT-'].update('正在扫描地址...')
-        # sg.popup_auto_close('正在扫描请稍等')
-        # result = ssh_command(ip_address='192.168.2.149', username='root', password='123..com',
-        #                      command='/root/scripts/ping.sh', key_filename=None)
         thread = gui_thread.MyThread(ssh_command, ('192.168.2.149', 'root', '123..com', '/root/scripts/ping.sh',
                                                    None))  # 将获取返回值并输出到文本框的操作封装到函数中，启动子线程时直接将结果输出到文本框
         thread.setDaemon(True)  # True主线程运行结束时不对这个子线程进行检查而直接退出
         thread.start()  # 启动线程
-        # window['-OUTPUT-'].update('当前无盘环境:\n' + result)
-        # window['-OUTPUT-'].print(result)
     if event == '查询当前数据库IP数量':
         window['-OUTPUT-'].update('')
         window['-OUTPUT-'].update('正在查询当前数据库IP数量...')
@@ -250,13 +260,6 @@ while True:
             com = 'python3' + ' ' + '/root/scripts/xianka_ip.py' + ' ' + 'ip' + ' ' + end_xian_ip
             gui_thread.run_backend(q, com)
         if event_xianka == '测试IP连通性':
-            end_xian_ip = ''
-            xianka_iplist = values_xianka['-xiankaip-'].split('\n')  # 将文本框中的IP格式化为列表
-            for i in xianka_iplist:  # 拼接指定格式的字符串 ip,ip,ip...
-                if i:
-                    i = i + ','
-                end_xian_ip += i
-            window_xianka['-xiankaip-'].update('')
             com = '/root/scripts/for.sh u ss ls'  # 将两条命令拼接
             gui_thread.run_backend(q, com)
         if event_xianka == '部署显卡环境':
@@ -274,8 +277,8 @@ while True:
             gui_thread.run_backend(q, com)
         while True:
             try:
-                msg = q.get_nowait()
-                window_xianka['-xiankaip-'].print(msg)
+                msg = q.get_nowait()  # 从线程中读取数据
+                window_xianka['-xiankaip-'].print(msg)  # 将日志输出到对应key(xiankaip)的界面上
             except:
                 break
     if event == '清空数据库并备份' and not win_ssh_active:
@@ -339,3 +342,10 @@ while True:
             thread.setDaemon(True)
             thread.start()  # 启动线程并将结果输出到文本框
             # window['-SSH-RESULT-'].print(result)
+    while True:
+        try:
+            msg = q.get_nowait()  # 从线程中读取数据
+            if event == '提交老化数据':
+                window['-laohua-'].print(msg)  # 将日志输出到对应key(xiankaip)的界面上
+        except:
+            break
