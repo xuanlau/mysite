@@ -98,19 +98,12 @@ def my_backend_logging(q, command):
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
         client.connect(hostname='192.168.2.149', username='root', password='123..com', timeout=1)
-<<<<<<< HEAD
-        stdin, stdout, stderr = client.exec_command(command)
-        if stdout:
-            for line in iter(stdout.readline, ""):
-                q.put(line.replace('[0m', '').replace('[32m', ''))
-=======
         # stdin、stdout 和 stderr。这三个文件对象分别表示了程序的输入、输出和错误输出流。它们是非阻塞的文件对象，
         # 因此可以采用单独的线程或异步模式管理它们的读写操作。
         stdin, stdout, stderr = client.exec_command(command)
         if stdout:
             for line in iter(stdout.readline, ""):
                 q.put(line.replace('[0m', '').replace('[32m', ''))  # 单独的线程来读取stdout
->>>>>>> master
         else:
             for line in iter(stderr.readline, ""):
                 q.put(line)
@@ -123,9 +116,5 @@ def my_backend_logging(q, command):
 
 def run_backend(queue, com):
     thread = threading.Thread(target=my_backend_logging, args=(queue, com))
-<<<<<<< HEAD
-    thread.setDaemon(True)
-=======
     thread.setDaemon(True)  # 设置守护进程，主进程退出后，线程自动退出
->>>>>>> master
     thread.start()
