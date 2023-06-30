@@ -16,33 +16,23 @@ def ssh_command(ip_address, username, password, command, key_filename=None, pass
         output = stdout.read().decode('utf-8')
         error = stderr.read().decode('utf-8')
         if error:
-            result = error
-            if command == '/root/scripts/mysql.sh ' + password_mysql:
-                result = password_mysql + str(error) + '请再次尝试！'
-                sg.popup_ok(result, title='结果', button_color='blue', non_blocking=True)
+            result_info = error
         else:
-            result = output
+            result_info = output
     except Exception as e:
-        if command == '/root/scripts/mysql.sh ' + str(password_mysql):
-            result = password_mysql + str(e) + '请再次尝试！'
-            sg.popup(result, title='结果')
-        else:
-            sg.popup(e, title='结果', non_blocking=True)
-        # elif command == '/root/scripts/mysql.sh ' + str(password_mysql):
-        #     sg.popup(result, title='结果')
-        result = f'Error: {e}'
+        result_info = f'Error: {e}'
     finally:
         client.close()
         # 将输出到文本框的操作封装到函数中，启动子线程时直接将结果输出到文本框
     if command == '/root/scripts/ping.sh':
-        window['-OUTPUT-'].update('当前无盘环境:\n' + result)
+        window['-OUTPUT-'].update('当前无盘环境:\n' + result_info)
     elif command == '/root/scripts/mysql.sh 123..com True':
-        window['-OUTPUT-'].update('当前数据库中IP:\n' + result)
+        window['-OUTPUT-'].update('当前数据库中IP:\n' + result_info)
     elif command == '/root/scripts/mysql.sh ' + str(password_mysql):
-        window['-FUNC-A-'].update(result)
+        window['-FUNC-A-'].update(result_info)
     else:
-        window['-SSH-RESULT-'].print(result)
-    return result
+        window['-SSH-RESULT-'].print(result_info)
+    return result_info
 
 
 # 定义登录界面布局
@@ -87,9 +77,10 @@ layout_main = [[sg.Menu(menu_def, tearoff=False)],
                [sg.Column(
                    layout=[[sg.Text('老化环境', font=('微软雅黑', 10), text_color='white', background_color='purple')],
                            [sg.Text("系统盘类型", size=yace_size), sg.Combo(raid_options_list, size=yace_size,
-                                                  default_value=raid_options_list[0], key="-RAID_TYPE-"), sg.Text('')],
+                                                                            default_value=raid_options_list[0],
+                                                                            key="-RAID_TYPE-"), sg.Text('')],
                            [sg.Text('CPU压测时间', size=yace_size),
-                            sg.Input('', key='cpu_input', size=yace_size, pad=(0, 0)), sg.Text('秒', pad=(0, 0))],
+                            sg.Input('', key='cpu_input', size=yace_size), sg.Text('秒')],
                            [sg.Text('内存压测时间', size=yace_size),
                             sg.Input('', key='mem_input', size=yace_size), sg.Text('秒')],
                            [sg.Text('硬盘压测时间', size=yace_size),
@@ -98,21 +89,11 @@ layout_main = [[sg.Menu(menu_def, tearoff=False)],
                    justification='left'), sg.Column(layout=layout_pxe, justification='right')],
                # [sg.InputText(key='-SEARCH-', size=(50, 1), background_color='#FFFFFF', text_color='#663399')],
                [sg.Button('扫描无盘环境', button_color=('white', '#663399')), sg.Button('查询当前数据库IP数量',
-                        button_color=('white', '#663399')),
+                                                                                        button_color=(
+                                                                                        'white', '#663399')),
                 sg.Button('导出数据库数据(默认当前路径下)', button_color=('white', '#663399')),
                 sg.Button('显卡环境部署/压测', button_color=('white', '#663399'))],
-               [sg.Multiline(key='-OUTPUT-', size=(80, 8), autoscroll=True)],
-               # 文本选择器，先注释
-               # [sg.Column([
-               #     [sg.Text('导出数据库数据')],
-               #     [sg.FileSaveAs(key='-Directoryselection-', size=(10, 1), button_text='选择保存路径')]])],
-               # [sg.FolderBrowse(key='-FILESELECTOR-', size=(10, 1)), sg.InputText(key='-MULTI FILEPATH-', size=(50, 1),
-               #                                                                    disabled=True)],
-               # [sg.Column([
-               #     [sg.Text('选择多个文件')],
-               #     [sg.FilesBrowse(key='-MULTIFACTORIALLY-', file_types=(('Text Files', '*.txt'), ('All Files', '*.*')),
-               #                     size=(10, 1)), sg.InputText(key='-MULTI FILEPATH-', size=(50, 1), disabled=False)]
-               # ], element_justification='center', vertical_alignment='top')],  # justification='right' 靠右
+               [sg.Multiline(key='-OUTPUT-', size=(80, 8), autoscroll=True, disabled=True)],
                [sg.Column(layout=[[sg.Button('清空数据库并备份', size=(20, 1))],
                                   [sg.Multiline(key='-FUNC-A-', size=(40, 6))]], element_justification='left'),
                 sg.Column(layout=[[sg.Button('执行远程命令(ssh)', size=(20, 1))], [sg.Multiline(key='-SSH-RESULT-',
@@ -135,14 +116,17 @@ window_pxe_custom = ''
 window_xianka = ''
 q = queue.Queue()
 custom_data = []
+biaozhi_wei = []
 
 
 def create_custom(custom_data):
     return [
-            # [sg.Button('添加一行数据'), sg.Column([[sg.Input(), sg.Input()] for i in range(len(custom_data) + 1)])],# 旧
-            [sg.Button('添加一行数据')], [sg.Text('挂载点', size=10), sg.Text('分区大小', size=10)],
-            [[sg.Input('', size=10), sg.Input('', size=10), sg.Button('删除', )] for i in range(len(custom_data) + 1)],
-        ]
+        # [sg.Button('添加一行数据'), sg.Column([[sg.Input(), sg.Input()] for i in range(len(custom_data) + 1)])],# 旧
+        [sg.Button('添加一行数据')], [sg.Text('挂载点', size=10), sg.Text('分区大小', size=10)],
+        [[sg.Input('', size=10), sg.Input('', size=10), sg.Button('删除', )] for i in range(len(custom_data) + 1)],
+    ]
+
+
 while True:
     event, values = window.read(timeout=100)
     if event in (None, '退出', 'Exit'):
@@ -196,7 +180,7 @@ while True:
                 print('error')
             else:
                 window_pxe_custom.close()
-                custom_data.pop(len(custom_data)-1)
+                custom_data.pop(len(custom_data) - 1)
                 layout_pxe_custom = create_custom(custom_data)
                 window_pxe_custom = sg.Window('PXE高级选项', layout_pxe_custom, finalize=True)
     if event == '扫描无盘环境':
@@ -245,7 +229,6 @@ while True:
     if win_xianka_active:
         event_xianka, values_xianka = window_xianka.read(timeout=100)
         if event_xianka in [None, '退出', sg.WIN_CLOSED]:
-            # break
             win_xianka_active = False
             window_xianka.close()  # 关闭子窗口
         if event_xianka == '提交IP':
@@ -341,10 +324,3 @@ while True:
             thread.setDaemon(True)
             thread.start()  # 启动线程并将结果输出到文本框
             # window['-SSH-RESULT-'].print(result)
-    while True:
-        try:
-            msg = q.get_nowait()  # 从线程中读取数据
-            if event == '提交老化数据':
-                window['-laohua-'].print(msg)  # 将日志输出到对应key(xiankaip)的界面上
-        except:
-            break

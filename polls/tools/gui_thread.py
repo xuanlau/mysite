@@ -97,20 +97,21 @@ def my_backend_logging(q, command):
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
-        client.connect(hostname='192.168.2.149', username='root', password='123..com', timeout=1)
+        client.connect(hostname='192.168.2.149', username='root', password='123..com', timeout=100)
         # stdin、stdout 和 stderr。这三个文件对象分别表示了程序的输入、输出和错误输出流。它们是非阻塞的文件对象，
         # 因此可以采用单独的线程或异步模式管理它们的读写操作。如：q.put(line)
         stdin, stdout, stderr = client.exec_command(command)
         if stdout:
             for line in iter(stdout.readline, ""):
-                q.put(line.replace('[0m', '').replace('[32m', ''))  # 单独的线程来读取stdout
+                # 单独的线程来读取stdout, readline默认每一个元素包含一个换行符，所以需要去掉(替换为空)
+                q.put(line.replace('[0m', '').replace('[32m', '').replace('\n', ''))
         else:
             for line in iter(stderr.readline, ""):
                 q.put(line)
     except Exception as e:
         q.put(e)
     finally:
-        q.put('测试结束')
+        q.put('结束')
         client.close()
 
 
