@@ -99,7 +99,7 @@ def my_backend_logging(q, command):
     try:
         client.connect(hostname='192.168.2.149', username='root', password='123..com', timeout=1)
         # stdin、stdout 和 stderr。这三个文件对象分别表示了程序的输入、输出和错误输出流。它们是非阻塞的文件对象，
-        # 因此可以采用单独的线程或异步模式管理它们的读写操作。
+        # 因此可以采用单独的线程或异步模式管理它们的读写操作。如：q.put(line)
         stdin, stdout, stderr = client.exec_command(command)
         if stdout:
             for line in iter(stdout.readline, ""):
