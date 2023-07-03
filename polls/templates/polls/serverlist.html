@@ -54,7 +54,8 @@
                         </div>
                      </div>
                 </div>
-                <table class="table table-hover" style="background-color: #FFFFFF"  id="table"></table>
+                {# 表格或者form表单，需要加{% csrf_token %}，防止跨站攻击，有时提供JS获取该token值 #}
+                <table class="table table-hover" style="background-color: #FFFFFF"  id="table">{% csrf_token %}</table>
                 <script src="{%static "js/bootstrap/jquery.min.js" %}"></script>
                 <script src="{%static "js/bootstrap/bootstrap.min.js" %}"></script>
                 <script src="{%static "js/bootstrap/bootstrap-table.js" %}"></script>
@@ -151,13 +152,14 @@
                                 }
                             ],
                             queryParams: function queryParams(params) {   //设置查询参数
-                                return {
-                                    //加上csrf
-                                    "csrfmiddlewaretoken":$("input[name='csrfmiddlewaretoken']").val(),
-                                    "pageNumber": params.pageNumber,
-                                    "pageSize": params.pageSize,
-                                    "orderNum": $("#orderNum").val()
+                                var param = {
+                                    //加上csrf, 从django的模板系统中的隐藏input元素中，根据元素的name值提取出来csrf token
+                                    csrfmiddlewaretoken :$("input[name='csrfmiddlewaretoken']").val(),
+                                    pageNumber: params.pageNumber,
+                                    pageSize: params.pageSize,
+                                    orderNum : $("#orderNum").val()
                                 };
+                                return param;
                             },
 
                         });

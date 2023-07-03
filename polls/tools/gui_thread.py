@@ -83,17 +83,21 @@ class MyThread(threading.Thread):
         self.result = []
 
     def run(self):
-        # self.result = self.func(*self.args)
+        # self.result = self.func(*self.args) # 获取线程执行的函数的返回值
         self.func(*self.args)
 
     def get_result(self):
         try:
             return self.result
-        except Exception:
-            return None
+        except Exception as e:
+            return e
 
 
-def my_backend_logging(q, command):
+def my_backend_logging(q, command, event=None, event_list=None):
+    # 如果是等待线程，就先阻塞，等其他线程的threading.Event().set()执行后再运行
+    if event_list:
+        for t in event_list:
+            t.wait()  # 阻塞
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
@@ -113,9 +117,19 @@ def my_backend_logging(q, command):
     finally:
         q.put('结束')
         client.close()
+    # 如果是需要先执行的线程，就执行完后再threading.Event().set()
+    if event:
+        q.put('daozhi')
+        event.set()
+    else:
+        pass
 
 
-def run_backend(queue, com):
-    thread = threading.Thread(target=my_backend_logging, args=(queue, com))
+def run_backend(queue, com, event=None, event_list=None):
+    thread = threading.Thread(target=my_backend_logging, args=(queue, com, event, event_list))
     thread.setDaemon(True)  # 设置守护进程，主进程退出后，线程自动退出
-    thread.start()
+    # 这里考虑遇到多个线程时，其中一个线程需要等待另外两个线程执行完后，自己才执行,用到了threading.Event()方法中的set()和wait()
+    # 如果没有先后顺序的话，就直接start(),反之，返回一个threading.Thread()对象
+    if not event and not event_list:
+        thread.start()
+    return thread

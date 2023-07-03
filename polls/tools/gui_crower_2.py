@@ -2,7 +2,7 @@ import PySimpleGUI as sg
 import paramiko
 import gui_thread
 import queue
-
+import threading
 
 # 一个用于库房人员压测的工具
 
@@ -32,7 +32,7 @@ def ssh_command(ip_address, username, password, command, key_filename=None, pass
         window['-FUNC-A-'].update(result_info)
     else:
         window['-SSH-RESULT-'].print(result_info)
-    return result_info
+    # return result_info  目前无需返回值
 
 
 # 定义登录界面布局
@@ -90,7 +90,7 @@ layout_main = [[sg.Menu(menu_def, tearoff=False)],
                # [sg.InputText(key='-SEARCH-', size=(50, 1), background_color='#FFFFFF', text_color='#663399')],
                [sg.Button('扫描无盘环境', button_color=('white', '#663399')), sg.Button('查询当前数据库IP数量',
                                                                                         button_color=(
-                                                                                        'white', '#663399')),
+                                                                                            'white', '#663399')),
                 sg.Button('导出数据库数据(默认当前路径下)', button_color=('white', '#663399')),
                 sg.Button('显卡环境部署/压测', button_color=('white', '#663399'))],
                [sg.Multiline(key='-OUTPUT-', size=(80, 8), autoscroll=True, disabled=True)],
@@ -116,14 +116,14 @@ window_pxe_custom = ''
 window_xianka = ''
 q = queue.Queue()
 custom_data = []
-biaozhi_wei = []
 
 
 def create_custom(custom_data):
     return [
         # [sg.Button('添加一行数据'), sg.Column([[sg.Input(), sg.Input()] for i in range(len(custom_data) + 1)])],# 旧
         [sg.Button('添加一行数据')], [sg.Text('挂载点', size=10), sg.Text('分区大小', size=10)],
-        [[sg.Input('', size=10), sg.Input('', size=10), sg.Button('删除', )] for i in range(len(custom_data) + 1)],
+        [[sg.Input('', size=10, key=f'mount_{j}'), sg.Input('', size=10, key=f'part_{j}'), sg.Button('删除', )]
+         for j in range(len(custom_data) + 1)],
     ]
 
 
@@ -245,9 +245,24 @@ while True:
             com = '/root/scripts/for.sh u ss ls'  # 将两条命令拼接
             gui_thread.run_backend(q, com)
         if event_xianka == '部署显卡环境':
-            # com = '/root/scripts/for.sh u sc /root/aleo/NVIDIA-3090-Linux-x86_64-515.57.run'
-            com = 'echo OK'
-            gui_thread.run_backend(q, com)
+            com1 = '/root/scripts/for.sh u sc /root/aleo/gpu_deploy/'  # 传输安装包
+            com2 = "/root/scripts/for.sh u ss 'echo 123..com | sudo -S apt update --fix-missing -y &&" \
+                   "echo 123..com | sudo -S apt-get install nvidia-cuda-toolkit g++ make -y'"
+            # com1 = 'for i in {1..10};do echo $i; sleep 1  ;done'
+            # com2 = 'for j in {1..10};do echo $j; sleep 1 ; done'
+            # 需要传输后才能做的操作，可以根据一个标志位的状态来判断，是否可以操作。
+            com3 = "/root/scripts/for.sh u ss 'cd gpu_deploy ; echo 123..com | sudo -S " \
+                   "./NVIDIA-3090-Linux-x86_64-515.57.run -a -s --no-x-check; cd ./gpu_burn ; make ; cd ~'"
+            # 创建两个event
+            event1 = threading.Event()
+            event2 = threading.Event()
+            t1 = gui_thread.run_backend(q, com1, event=event1)
+            t2 = gui_thread.run_backend(q, com2, event=event2)
+            t3 = gui_thread.run_backend(q, com3, event_list=[event1, event2])
+            t1.start()
+            t2.start()
+            # 最后执行线程3
+            t3.start()
         if event_xianka == '环境检查':
             com = "/root/scripts/for.sh u ss 'nvidia-smi > /dev/null || echo 驱动安装异常'"
             gui_thread.run_backend(q, com)
