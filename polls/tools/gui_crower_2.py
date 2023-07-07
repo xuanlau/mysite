@@ -110,9 +110,9 @@ def ret_layout_main(disabled_str, layout_pxe_str):  # 此处改为函数化，�
              sg.Column(layout=[[sg.Button('执行远程命令(ssh)', size=(20, 1))], [sg.Multiline(key='-SSH-RESULT-',
                                                                                              size=(40, 6))]],
                        element_justification='right')],
-            [sg.Text('注：\n1、点击扫描无盘环境可以看到正在压测的IP。\n2、点击清空数据库并备份即可清空数据库并备份。\n3、执行SSH命令需输入用户'
-                     '名、密码、IP地址和命令。\n4、点击查询数据库IP，即可查看当前数据库里的IP。\n5、点击导出数据库数据，即可将数据库数据'
-                     '导出到当前路径下。\n6、更改PXE系统功能暂不可用', font=('宋体', 13),
+            [sg.Text('注：\n1、新增老化压测提交。\n2、新增PXE环境数据提交。\n3、点击扫描无盘环境可以看到正在压测的IP。\n4、点击清空数据库并备份即可清空数据库并备份。\n5、执行SSH命令需输入用户'
+                     '名、密码、IP地址和命令。\n6、点击查询数据库IP，即可查看当前数据库里的IP。\n7、点击导出数据库数据，即可将数据库数据导出到当前路径下。\n8、新增显卡环境部署和压测。'
+                     , font=('宋体', 13),
                      pad=((0, 0), (30, 0)), text_color='red')],
             [sg.Text('版权所有 ©2023 Crower Inc.。', font=('宋体', 8), pad=((0, 0), (30, 0)))]]
 
@@ -131,7 +131,8 @@ window_pxe_custom = ''
 window_xianka = ''
 q = queue.Queue()
 custom_data = []
-Flag_ = ''
+user_xianka = ''
+password_xianka = ''
 
 
 def create_custom(custom_data):
@@ -171,7 +172,6 @@ while True:
         com = '/root/scripts/replace.sh {} {} {} {}'.format(values['-RAID_TYPE-'], values['cpu_input'],
                                                             values['mem_input'], values['disk_input'])
         gui_thread.run_backend(q, com)
-        Flag_ = True
     if event == '提交PXE数据':
         # 拼接所有PXE装机所需的数据，目前还剩自定义挂载的数据
         custom_str = ''
@@ -245,17 +245,27 @@ while True:
     if event == '显卡环境部署/压测':
         win_xianka_active = True
         layout_xianka = [[sg.Column(
-            layout=[[sg.Multiline(key='-xiankaip-', size=(80, 30), text_color='purple', disabled=True)],
+            layout=[[sg.Text('目标机器用户名'), sg.Input(key='user_xk', size=(15, 1), default_text='ubuntu'),
+                     sg.Text('目标机器密码'), sg.Input(key='password_xk', password_char='*', size=(15, 1),
+                                                       default_text='123..com'),
+                     sg.Button('提交用户名密码')],
+                    [sg.Multiline(key='-xiankaip-', size=(150, 30), text_color='purple')],
                     [sg.Button('提交IP', size=(8, 1)), sg.Button('测试IP连通性', size=(10, 1)),
-                     sg.Button('部署显卡环境', size=(10, 1), disabled=True), sg.Button('环境检查', size=(8, 1)),
+                     sg.Button('部署显卡环境', size=(10, 1)), sg.Button('环境检查', size=(8, 1)),
                      sg.Button('显卡压测', size=(8, 1)),
-                     sg.Button('开始定时收集日志', size=(14, 1))]], element_justification='left')]]
+                     sg.Button('检测压测是否正常', size=(14, 1)),
+                     sg.Button('开始定时收集日志', size=(14, 1)),
+                     sg.Button('停止压测', size=(8, 1)),
+                     sg.Button('清空窗口', size=(10, 1), button_color='pink'), ]], element_justification='left')]]
         window_xianka = sg.Window('请输入压测节点IP', layout_xianka)
     if win_xianka_active:
         event_xianka, values_xianka = window_xianka.read(timeout=100)
         if event_xianka in [None, '退出', sg.WIN_CLOSED]:
             win_xianka_active = False
             window_xianka.close()  # 关闭子窗口
+        if event_xianka == '提交用户名密码':
+            user_xianka = values_xianka['user_xk']
+            password_xianka = values_xianka['password_xk']
         if event_xianka == '提交IP':
             end_xian_ip = ''
             xianka_iplist = values_xianka['-xiankaip-'].split('\n')  # 将文本框中的IP格式化为列表
@@ -267,33 +277,40 @@ while True:
             com = 'python3' + ' ' + '/root/scripts/xianka_ip.py' + ' ' + 'ip' + ' ' + end_xian_ip
             gui_thread.run_backend(q, com)
         if event_xianka == '测试IP连通性':
-            com = '/root/scripts/for.sh u ss ls'  # 将两条命令拼接
+            # com = '/root/scripts/for.sh u ss ls'
+            com = '/root/scripts/for.sh-new -o u -s ss -u {} -p {} -c ls'.format(user_xianka, password_xianka)
             gui_thread.run_backend(q, com)
         if event_xianka == '部署显卡环境':
-            com1 = '/root/scripts/for.sh u sc /root/aleo/gpu_deploy/'  # 传输安装包
-            com2 = "/root/scripts/for.sh u ss 'echo 123..com | sudo -S apt update --fix-missing -y &&" \
-                   "echo 123..com | sudo -S apt-get install nvidia-cuda-toolkit g++ make -y'"
-            com3 = "/root/scripts/for.sh u ss 'cd gpu_deploy ; echo 123..com | sudo -S " \
-                   "./NVIDIA-3090-Linux-x86_64-515.57.run -a -s --no-x-check; cd ./gpu_burn ; make ; cd ~'"
+            com1 = '/root/scripts/for.sh -o u -s sc -u {} -p {} -c /root/aleo/gpu_deploy/'.format(
+                user_xianka, password_xianka)  # 传输安装包
+            com2 = "/root/scripts/for.sh -o u -s ss -u {} -p {} -c 'echo 111111 | sudo -S apt update --fix-missing -y &&" \
+                   "echo 1111111 | sudo -S apt-get install nvidia-cuda-toolkit g++ make -y'".format(user_xianka, password_xianka)
+            com3 = "/root/scripts/for.sh -o u -s ss -u {} -p {} -c 'cd gpu_deploy ; echo 111111 | sudo -S " \
+                   "./NVIDIA-3090-Linux-x86_64-515.57.run -a -s --no-x-check; cd ./gpu_burn ; make ; cd ~'".format(user_xianka, password_xianka)
             # 创建两个event
             event1 = threading.Event()
             event2 = threading.Event()
             t1 = gui_thread.run_backend(q, com1, event=event1)
             t2 = gui_thread.run_backend(q, com2, event=event2)
-            t3 = gui_thread.run_backend(q, com3, event_list=[event1, event2])
+            t3 = gui_thread.run_backend(q, com3, event_list=[event1, event2])  # 该线程检测到event1/2时间即运行
             t1.start()
             t2.start()
             # 最后执行线程3
             t3.start()
         if event_xianka == '环境检查':
-            com = "/root/scripts/for.sh u ss 'nvidia-smi > /dev/null || echo 驱动安装异常'"
+            com = "/root/scripts/for.sh -o u -s ss -u {} -p {} -c 'nvidia-smi > /dev/null || echo 驱动安装异常'".format(user_xianka, password_xianka)
             gui_thread.run_backend(q, com)
         if event_xianka == '显卡压测':
-            com = "/root/scripts/for.sh u ss 'cd gpu_burn/  ; nohup ./gpu_burn 7200 > gpu.log 2>&1 &'"
+            com = "/root/scripts/for.sh -o u -s ss -u {} -p {} -c 'cd gpu_deploy/gpu_burn/  ; nohup ./gpu_burn 10800 > gpu.log 2>&1 &'".format(user_xianka, password_xianka)
             gui_thread.run_backend(q, com)
         if event_xianka == '开始定时收集日志':
-            com = "/root/scripts/for.sh u x s"
+            com = "/root/scripts/for.sh -o u -s x -u {} -p {} -c 'nvidia-smi'".format(user_xianka, password_xianka)
             gui_thread.run_backend(q, com)
+        if event_xianka == '停止压测':
+            com = "/root/scripts/for.sh -o u -s k -u {} -p {} -c 'kill'".format(user_xianka, password_xianka)
+            gui_thread.run_backend(q, com)
+        if event_xianka == '清空窗口':
+            window_xianka['-xiankaip-'].update('')
         while True:
             try:
                 msg = q.get_nowait()  # 从线程中读取数据
