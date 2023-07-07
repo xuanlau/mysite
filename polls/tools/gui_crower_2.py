@@ -133,6 +133,7 @@ q = queue.Queue()
 custom_data = []
 user_xianka = ''
 password_xianka = ''
+show_password = False
 
 
 def create_custom(custom_data):
@@ -248,7 +249,8 @@ while True:
             layout=[[sg.Text('目标机器用户名'), sg.Input(key='user_xk', size=(15, 1), default_text='ubuntu'),
                      sg.Text('目标机器密码'), sg.Input(key='password_xk', password_char='*', size=(15, 1),
                                                        default_text='123..com'),
-                     sg.Button('提交用户名密码')],
+                     sg.Button('提交用户名密码'), sg.Button('显示密码'), sg.Text('压测时间(秒)'),
+                     sg.Input('10800', key='time_xk', pad=(0, 0)), sg.Text('秒', pad=(0, 0))],
                     [sg.Multiline(key='-xiankaip-', size=(150, 30), text_color='purple')],
                     [sg.Button('提交IP', size=(8, 1)), sg.Button('测试IP连通性', size=(10, 1)),
                      sg.Button('部署显卡环境', size=(10, 1)), sg.Button('环境检查', size=(8, 1)),
@@ -266,6 +268,10 @@ while True:
         if event_xianka == '提交用户名密码':
             user_xianka = values_xianka['user_xk']
             password_xianka = values_xianka['password_xk']
+        if event_xianka == '显示密码':
+            # 这是一种很好的点击刷新界面元素的方式，可以推广至别的地方
+            show_password = not show_password
+            window_xianka['password_xk'].update(password_char='' if show_password else '*')
         if event_xianka == '提交IP':
             end_xian_ip = ''
             xianka_iplist = values_xianka['-xiankaip-'].split('\n')  # 将文本框中的IP格式化为列表
@@ -301,7 +307,12 @@ while True:
             com = "/root/scripts/for.sh -o u -s ss -u {} -p {} -c 'nvidia-smi > /dev/null || echo 驱动安装异常'".format(user_xianka, password_xianka)
             gui_thread.run_backend(q, com)
         if event_xianka == '显卡压测':
-            com = "/root/scripts/for.sh -o u -s ss -u {} -p {} -c 'cd gpu_deploy/gpu_burn/  ; nohup ./gpu_burn 10800 > gpu.log 2>&1 &'".format(user_xianka, password_xianka)
+            com = "/root/scripts/for.sh -o u -s ss -u {} -p {} -c 'cd gpu_deploy/gpu_burn/  ; " \
+                  "nohup ./gpu_burn {} > gpu.log 2>&1 &'".format(user_xianka, password_xianka, values_xianka['time_xk'])
+            # gui_thread.run_backend(q, com)
+            window_xianka['-xiankaip-'].print(com)
+        if event_xianka == '检测压测是否正常':
+            com = "/root/scripts/for.sh -o u -s ss -u {} -p {} -c 'ps -ef|grep gpu_burn | grep -v grep '".format(user_xianka, password_xianka)
             gui_thread.run_backend(q, com)
         if event_xianka == '开始定时收集日志':
             com = "/root/scripts/for.sh -o u -s x -u {} -p {} -c 'nvidia-smi'".format(user_xianka, password_xianka)
