@@ -257,6 +257,7 @@ while True:
                      sg.Button('显卡压测', size=(8, 1)),
                      sg.Button('检测压测是否正常', size=(14, 1)),
                      sg.Button('开始定时收集日志', size=(14, 1)),
+                     sg.Button('停止收集日志', size=(14, 1)),
                      sg.Button('停止压测', size=(8, 1)),
                      sg.Button('清空窗口', size=(10, 1), button_color='pink'), ]], element_justification='left')]]
         window_xianka = sg.Window('请输入压测节点IP', layout_xianka)
@@ -283,15 +284,15 @@ while True:
             com = 'python3' + ' ' + '/root/scripts/xianka_ip.py' + ' ' + 'ip' + ' ' + end_xian_ip
             gui_thread.run_backend(q, com)
         if event_xianka == '测试IP连通性':
-            # com = '/root/scripts/for.sh u ss ls'
+            # com = '/root/scripts/for.sh-new u ss ls'
             com = '/root/scripts/for.sh-new -o u -s ss -u {} -p {} -c ls'.format(user_xianka, password_xianka)
             gui_thread.run_backend(q, com)
         if event_xianka == '部署显卡环境':
-            com1 = '/root/scripts/for.sh -o u -s sc -u {} -p {} -c /root/aleo/gpu_deploy/'.format(
+            com1 = '/root/scripts/for.sh-new-new -o u -s sc -u {} -p {} -c /root/aleo/gpu_deploy/'.format(
                 user_xianka, password_xianka)  # 传输安装包
-            com2 = "/root/scripts/for.sh -o u -s ss -u {} -p {} -c 'echo 111111 | sudo -S apt update --fix-missing -y &&" \
+            com2 = "/root/scripts/for.sh-new -o u -s ss -u {} -p {} -c 'echo 111111 | sudo -S apt update --fix-missing -y &&" \
                    "echo 1111111 | sudo -S apt-get install nvidia-cuda-toolkit g++ make -y'".format(user_xianka, password_xianka)
-            com3 = "/root/scripts/for.sh -o u -s ss -u {} -p {} -c 'cd gpu_deploy ; echo 111111 | sudo -S " \
+            com3 = "/root/scripts/for.sh-new -o u -s ss -u {} -p {} -c 'cd gpu_deploy ; echo 111111 | sudo -S " \
                    "./NVIDIA-3090-Linux-x86_64-515.57.run -a -s --no-x-check; cd ./gpu_burn ; make ; cd ~'".format(user_xianka, password_xianka)
             # 创建两个event
             event1 = threading.Event()
@@ -304,21 +305,24 @@ while True:
             # 最后执行线程3
             t3.start()
         if event_xianka == '环境检查':
-            com = "/root/scripts/for.sh -o u -s ss -u {} -p {} -c 'nvidia-smi > /dev/null || echo 驱动安装异常'".format(user_xianka, password_xianka)
+            com = "/root/scripts/for.sh-new -o u -s ss -u {} -p {} -c 'nvidia-smi > /dev/null || echo 驱动安装异常'".format(user_xianka, password_xianka)
             gui_thread.run_backend(q, com)
         if event_xianka == '显卡压测':
-            com = "/root/scripts/for.sh -o u -s ss -u {} -p {} -c 'cd gpu_deploy/gpu_burn/  ; " \
+            com = "/root/scripts/for.sh-new -o u -s ss -u {} -p {} -c 'cd gpu_deploy/gpu_burn/  ; " \
                   "nohup ./gpu_burn {} > gpu.log 2>&1 &'".format(user_xianka, password_xianka, values_xianka['time_xk'])
-            # gui_thread.run_backend(q, com)
-            window_xianka['-xiankaip-'].print(com)
+            gui_thread.run_backend(q, com)
+            # window_xianka['-xiankaip-'].print(com)
         if event_xianka == '检测压测是否正常':
-            com = "/root/scripts/for.sh -o u -s ss -u {} -p {} -c 'ps -ef|grep gpu_burn | grep -v grep '".format(user_xianka, password_xianka)
+            com = "/root/scripts/for.sh-new -o u -s ss -u {} -p {} -c 'ps -ef|grep gpu_burn | grep -v grep '".format(user_xianka, password_xianka)
             gui_thread.run_backend(q, com)
         if event_xianka == '开始定时收集日志':
-            com = "/root/scripts/for.sh -o u -s x -u {} -p {} -c 'nvidia-smi'".format(user_xianka, password_xianka)
+            com = "/root/scripts/for.sh-new -o u -s x -u {} -p {} -c 'nvidia-smi'".format(user_xianka, password_xianka)
+            gui_thread.run_backend(q, com)
+        if event_xianka == '停止收集日志':
+            com = "/root/scripts/for.sh-new -o u -s k_log -u {} -p {} -c 'k_log'".format(user_xianka, password_xianka)
             gui_thread.run_backend(q, com)
         if event_xianka == '停止压测':
-            com = "/root/scripts/for.sh -o u -s k -u {} -p {} -c 'kill'".format(user_xianka, password_xianka)
+            com = "/root/scripts/for.sh-new -o u -s k -u {} -p {} -c 'kill'".format(user_xianka, password_xianka)
             gui_thread.run_backend(q, com)
         if event_xianka == '清空窗口':
             window_xianka['-xiankaip-'].update('')
