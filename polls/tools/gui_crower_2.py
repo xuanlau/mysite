@@ -18,8 +18,10 @@ def ssh_command(ip_address, username, password, command, key_filename=None, pass
         error = stderr.read().decode('utf-8')
         if error:
             result_info = error
+            sg.popup(result_info, title='message')
         else:
             result_info = output
+            sg.popup('OK', title='message')
     except Exception as e:
         result_info = f'Error: {e}'
     finally:
@@ -165,9 +167,10 @@ while True:
         else:
             sg.popup('用户名或密码错误！')
     if event == '切换用户':
-        window.close()
-        time_str = now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")  # layout不可被重复使用(只可以使用一次)
-        window = sg.Window('运维管理系统', ret_layout_login(time_str), finalize=True)
+        window.close()  # 当前窗口关闭
+        # layout不可被重复使用(只可以使用一次), 这里通过时间的变化来使每个layout不同
+        time_str = now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        window = sg.Window('运维管理系统', ret_layout_login(time_str), finalize=True)  # 重新渲染登录界面
     if event == '提交老化数据':
         # 拼接老化环境数据, 使用.format方法格式化数据，丝滑
         com = '/root/scripts/replace.sh {} {} {} {}'.format(values['-RAID_TYPE-'], values['cpu_input'],
@@ -188,7 +191,7 @@ while True:
         window['-OUTPUT-'].print(com)
         thread = gui_thread.MyThread(ssh_command, ('192.168.2.149', 'root', '123..com', com,
                                                    None))  # 将获取返回值并输出到文本框的操作封装到函数中，启动子线程时直接将结果输出到文本框
-        thread.setDaemon(True)  # True主线程运行结束时不对这个子线程进行检查而直接退出
+        thread.setDaemon(True)  # True表示主线程运行结束时不对这个子线程进行检查而直接退出
         thread.start()  # 启动线程
     if event == '添加自定义挂载路径' and not window_pxe_custom_active:
         window_pxe_custom_active = True
@@ -238,19 +241,14 @@ while True:
             sg.popup(end_path, title='导出完成')
         except Exception as e:
             sg.popup(e, title='导出失败！')
-    if event == '切换无盘环境':
-        layout_wupan = [[sg.Checkbox('legacy', key='-LEGACY-'), sg.Checkbox('uefi', key='-UEFI-'), sg.Button('提交')],
-                        [sg.Combo(['centos7.6', 'centos7.9', 'ubuntu20.04.4', 'ubuntu20.04.5'],
-                                  default_value='centos7.6',
-                                  key='-OS-'), sg.Button('提交')], ]
     if event == '显卡环境部署/压测':
         win_xianka_active = True
         layout_xianka = [[sg.Column(
             layout=[[sg.Text('目标机器用户名'), sg.Input(key='user_xk', size=(15, 1), default_text='ubuntu'),
                      sg.Text('目标机器密码'), sg.Input(key='password_xk', password_char='*', size=(15, 1),
                                                        default_text='123..com'),
-                     sg.Button('提交用户名密码'), sg.Button('显示密码'), sg.Text('压测时间(秒)'),
-                     sg.Input('10800', key='time_xk', pad=(0, 0)), sg.Text('秒', pad=(0, 0))],
+                     sg.Button('提交用户名密码'), sg.Button('显示密码', button_color='red'), sg.Text('压测时间(秒)', text_color='yellow'),
+                     sg.Input('10800', key='time_xk', pad=(0, 0), size=(8, 1)), sg.Text('秒', pad=(0, 0))],
                     [sg.Multiline(key='-xiankaip-', size=(150, 30), text_color='purple')],
                     [sg.Button('提交IP', size=(8, 1)), sg.Button('测试IP连通性', size=(10, 1)),
                      sg.Button('部署显卡环境', size=(10, 1)), sg.Button('环境检查', size=(8, 1)),
@@ -259,7 +257,7 @@ while True:
                      sg.Button('开始定时收集日志', size=(14, 1)),
                      sg.Button('停止收集日志', size=(14, 1)),
                      sg.Button('停止压测', size=(8, 1)),
-                     sg.Button('清空窗口', size=(10, 1), button_color='pink'), ]], element_justification='left')]]
+                     sg.Button('清空窗口', size=(10, 1), button_color='lime'), ]], element_justification='left')]]
         window_xianka = sg.Window('请输入压测节点IP', layout_xianka)
     if win_xianka_active:
         event_xianka, values_xianka = window_xianka.read(timeout=100)
@@ -290,8 +288,8 @@ while True:
         if event_xianka == '部署显卡环境':
             com1 = '/root/scripts/for.sh-new-new -o u -s sc -u {} -p {} -c /root/aleo/gpu_deploy/'.format(
                 user_xianka, password_xianka)  # 传输安装包
-            com2 = "/root/scripts/for.sh-new -o u -s ss -u {} -p {} -c 'echo 111111 | sudo -S apt update --fix-missing -y &&" \
-                   "echo 1111111 | sudo -S apt-get install nvidia-cuda-toolkit g++ make -y'".format(user_xianka, password_xianka)
+            com2 = "/root/scripts/for.sh-new -o u -s ss -u {} -p {} -c 'echo {} | sudo -S apt update --fix-missing -y &&" \
+                   "echo 1111111 | sudo -S apt-get install nvidia-cuda-toolkit g++ make -y'".format(user_xianka, password_xianka, password_xianka)
             com3 = "/root/scripts/for.sh-new -o u -s ss -u {} -p {} -c 'cd gpu_deploy ; echo 111111 | sudo -S " \
                    "./NVIDIA-3090-Linux-x86_64-515.57.run -a -s --no-x-check; cd ./gpu_burn ; make ; cd ~'".format(user_xianka, password_xianka)
             # 创建两个event
@@ -299,7 +297,7 @@ while True:
             event2 = threading.Event()
             t1 = gui_thread.run_backend(q, com1, event=event1)
             t2 = gui_thread.run_backend(q, com2, event=event2)
-            t3 = gui_thread.run_backend(q, com3, event_list=[event1, event2])  # 该线程检测到event1/2时间即运行
+            t3 = gui_thread.run_backend(q, com3, event_list=[event1, event2])  # 该线程检测到event1/2事件即运行
             t1.start()
             t2.start()
             # 最后执行线程3
@@ -340,7 +338,7 @@ while True:
         window_mysql_password = sg.Window('请输入数据库密码',
                                           layout_mysql_password, location=(1200, 300))  # location 定义串口弹出的默认位置
     if win_mysql_active:
-        # while True:  # 子窗口和主窗口都激活的情况下，子窗口不进入自己的死循环！子窗口运行时不影响主窗口的事件点击
+        # while True:  # 子窗口和主窗口都激活的情况下，子窗口不进入自己的死循环的情况下！子窗口运行时不影响主窗口的事件点击
         event, values = window_mysql_password.read(timeout=100)
         if event in [None, '退出']:
             # break
@@ -348,16 +346,32 @@ while True:
             window_mysql_password.close()  # 关闭子窗口
         if event == '提交':
             password_mysql = values['-PASSWORD-']
+            # try:
+            #     thread = gui_thread.MyThread(ssh_command, ('192.168.2.149', 'root', '123..com',
+            #                                                '/root/scripts/mysql.sh' + ' ' + password_mysql, None,
+            #                                                password_mysql))
+            #     thread.setDaemon(True)
+            #     thread.start()  # 启动线程
+            # except Exception as e:
+            #     result = str(password_mysql) + str(e) + '请再次尝试！'
+            client = paramiko.SSHClient()
+            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             try:
-                # result = ssh_command(ip_address='192.168.2.149', username='root', password='123..com', command=
-                # '/root/scripts/mysql.sh ' + password_mysql)
-                thread = gui_thread.MyThread(ssh_command, ('192.168.2.149', 'root', '123..com',
-                                                           '/root/scripts/mysql.sh' + ' ' + password_mysql, None,
-                                                           password_mysql))
-                thread.setDaemon(True)
-                thread.start()  # 启动线程
+                client.connect(hostname='192.168.2.149', username='root', password='123..com', timeout=1,
+                               key_filename=None)
+                stdin, stdout, stderr = client.exec_command('/root/scripts/mysql.sh' + ' ' + password_mysql)
+                output = stdout.read().decode('utf-8')
+                error = stderr.read().decode('utf-8')
+                if error:
+                    result_info = error
+                    sg.popup(result_info, title='备份失败')
+                else:
+                    result_info = output
+                    sg.popup(result_info, title='备份成功')
             except Exception as e:
-                result = str(password_mysql) + str(e) + '请再次尝试！'
+                result_info = f'Error: {e}'
+            finally:
+                client.close()
     if event == 'clear':
         window['-FUNC-A-'].update('')
     # SSH远程登录并执行命令
