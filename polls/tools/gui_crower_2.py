@@ -4,6 +4,7 @@ import gui_thread
 import queue
 import threading
 import datetime
+import math
 
 # 一个用于库房人员压测的工具
 
@@ -18,10 +19,8 @@ def ssh_command(ip_address, username, password, command, key_filename=None, pass
         error = stderr.read().decode('utf-8')
         if error:
             result_info = error
-            sg.popup(result_info, title='message')
         else:
             result_info = output
-            sg.popup('OK', title='message')
     except Exception as e:
         result_info = f'Error: {e}'
     finally:
@@ -62,7 +61,8 @@ def create_custom_(mount_point, key_str):
 
 
 def ret_layout_pxe(disabled_str):
-    layout_pxe = [[sg.Text('PXE环境', font=('微软雅黑', 10), text_color='white', background_color='purple'), sg.Button('切换用户')],
+    layout_pxe = [[sg.Text('PXE环境', font=('微软雅黑', 10), text_color='white', background_color='purple'),
+                   sg.Button('切换用户')],
                   [sg.Text('! 分区大小为1则代表剩余磁盘的容量全部分配(boot/swap除外)', font=('微软雅黑', 10),
                            text_color='red', background_color='white')],
                   [sg.Text("操作系统", size=yace_size), sg.Combo(os_option_list,
@@ -81,26 +81,32 @@ def ret_layout_pxe(disabled_str):
     layout_pxe.append([sg.Button('提交PXE数据', size=yace_size, disabled=disabled_str),
                        sg.Button('添加自定义挂载路径', disabled=disabled_str)])
     return layout_pxe
+
+
 # layout_main必须为列表，且列表中的每一个元素都必须为可迭代的列表或者切片
 
 
 def ret_layout_main(disabled_str, layout_pxe_str):  # 此处改为函数化，返回一个layout列表，最终目的是为了用户权限的区分，disabled_str定义了按钮是否可以点击，从而定义权限
     return [[sg.Menu(menu_def, tearoff=False)],
-            # sg.Column 方法，提供了控制整体元素位置的参数：justification
+            # 此处渲染老化和PXE的数据提交界面，采用一个列表里放两个sg.Colum。左右分布。 sg.Column方法，提供了控制整体元素位置的参数：justification
             [sg.Column(
                 layout=[[sg.Text('老化环境', font=('微软雅黑', 10), text_color='white', background_color='purple')],
                         [sg.Text("系统盘类型", size=yace_size), sg.Combo(raid_options_list, size=yace_size,
                                                                          default_value=raid_options_list[0],
                                                                          key="-RAID_TYPE-"), sg.Text('')],
                         [sg.Text('CPU压测时间', size=yace_size),
-                         sg.Input('', key='cpu_input', size=yace_size), sg.Text('秒')],
+                         sg.Input(key='cpu_input', default_text=3600, size=yace_size), sg.Text('秒')],
                         [sg.Text('内存压测时间', size=yace_size),
-                         sg.Input('', key='mem_input', size=yace_size), sg.Text('秒')],
+                         sg.Input(key='mem_input', size=yace_size, default_text=7200), sg.Text('秒')],
                         [sg.Text('硬盘压测时间', size=yace_size),
-                         sg.Input('', key='disk_input', size=yace_size), sg.Text('秒')],
+                         sg.Input(key='disk_input', size=yace_size, default_text=3600), sg.Text('秒')],
+                        [sg.Text(
+                            '此处压测总时间的计算规则是: \nCPU和内存中取时间长的值，加上硬盘压测时间，\n等于总时间。当前总时间为3小时',
+                            text_color='red')],
                         [sg.Button('提交老化数据', size=yace_size, disabled=disabled_str)]],  # disabled=True使得按钮不可点击
                 justification='left'), sg.Column(layout=layout_pxe_str, justification='right')],
             # [sg.InputText(key='-SEARCH-', size=(50, 1), background_color='#FFFFFF', text_color='#663399')],
+            # 下面的代码渲染其他元素
             [sg.Button('扫描无盘环境', button_color=('white', '#663399')), sg.Button('查询当前数据库IP数量',
                                                                                      button_color=(
                                                                                          'white', '#663399')),
@@ -119,10 +125,44 @@ def ret_layout_main(disabled_str, layout_pxe_str):  # 此处改为函数化，�
             [sg.Text('版权所有 ©2023 Crower Inc.。', font=('宋体', 8), pad=((0, 0), (30, 0)))]]
 
 
+def Con_cal():  # 此函数为渲染计算耗材界面
+    return [[sg.Menu(menu_def, tearoff=False)],
+            # 此处渲染老化和PXE的数据提交界面，采用一个列表里放两个sg.Colum。左右分布。 sg.Column方法，提供了控制整体元素位置的参数：justification
+            [sg.Column(
+                layout=[[sg.Text('耗材计算', font=('微软雅黑', 10), text_color='white', background_color='purple')],
+                        [sg.Text("通道为单列或者双列", size=yace_size), sg.Combo(['单列', '双列'], size=yace_size,
+                                                                                 default_value='单列',
+                                                                                 key="-CHAN_TYPE-"), sg.Text('')],
+                        [sg.Text('通道单列的机柜数量', size=yace_size),
+                         sg.Input(key='cab_num_input', default_text=25, size=yace_size), sg.Text('个')],
+                        [sg.Text('通道宽度', size=yace_size),
+                         sg.Input(key='chan_width_input', size=yace_size, default_text=4), sg.Text('米')],
+                        [sg.Text('机柜高度', size=yace_size),
+                         sg.Input(key='cab_height_input', size=yace_size, default_text=2.2), sg.Text('米')],
+                        [sg.Text('机柜宽度', size=yace_size),
+                         sg.Input(key='cab_width_input', size=yace_size, default_text=0.6), sg.Text('米')],
+                        [sg.Text('机柜顶部到桥架高度', size=yace_size),
+                         sg.Input(key='cabtobridge_input', size=yace_size, default_text=0.7), sg.Text('米')],
+                        [sg.Text('服务器数量', size=yace_size),
+                         sg.Input(key='server_num_input', size=yace_size, default_text=4), sg.Text('台')],
+                        [sg.Text('服务器IB网口数量', size=yace_size),
+                         sg.Input(key='server_ib_num_input', size=yace_size, default_text=4), sg.Text('个')],
+                        [sg.Text('交换机端口数', size=yace_size),
+                         sg.Input(key='switch_port_num_input', size=yace_size, default_text=64), sg.Text('个')],
+                        [sg.Text("接入方式为一分二/一分一", size=yace_size),
+                         sg.Combo(['一分二', '一分一'], size=yace_size,
+                                  default_value='一分二', key="-ACCESS_TYPE-"), sg.Text('')],
+                        # [sg.Text('此处压测总时间的计算规则是: \nCPU和内存中取时间长的值，加上硬盘压测时间，\n等于总时间。当前总时间为3小时', text_color='red')],
+                        [sg.Button('计算所需接入/汇聚交换机数量', size=(30, 1), disabled=False)],
+                        [sg.Button('提交数据', size=yace_size, disabled=False)]],  # disabled=True使得按钮不可点击
+                justification='center')],
+            [sg.Multiline(key='-OUTPUT-', size=(80, 8), autoscroll=True, disabled=True)]]  # autoscroll自动滚动
+
+
 # 创建主窗口
 time_str = now = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 layout_login = ret_layout_login(time_str)
-window = sg.Window('运维管理系统', layout_login, finalize=True)
+window = sg.Window('运维管理系统', layout_login, finalize=True)  # 登录界面展示
 win_mysql_active = False
 win_ssh_active = False
 window_pxe_custom_active = False
@@ -147,6 +187,21 @@ def create_custom(custom_data):
     ]
 
 
+def qu_zheng(float_num):
+    result_num = float_num
+    if str(float_num).split('.'):
+        print(str(float_num).split('.'))
+        float_num_acc = str(float_num).split('.')[1]
+        int_num_acc = int(str(float_num).split('.')[0])
+        print(int_num_acc, float_num_acc)
+        if float_num_acc != '0':
+            result_num = int_num_acc + 1
+            print(result_num)
+        else:
+            result_num = int_num_acc
+    return result_num
+
+
 while True:
     event, values = window.read(timeout=100)
     if event in (None, '退出', 'Exit'):
@@ -164,8 +219,51 @@ while True:
             layout_pxe = ret_layout_pxe(False)
             layout_main = ret_layout_main(False, layout_pxe)
             window = sg.Window('运维管理系统', layout_main, element_justification='center', finalize=True)
+        elif values['-USERNAME-'] == 'user' and values['-PASSWORD-'] == '123..com':
+            window.close()
+            layout_main = Con_cal()
+            window = sg.Window('耗材计算系统', layout_main, element_justification='center', finalize=True)
         else:
             sg.popup('用户名或密码错误！')
+    if event == '计算所需接入/汇聚交换机数量':
+        agg_switch_num = ''
+        if values['-ACCESS_TYPE-'] == '一分二':
+            acc_number_cab = int(values['server_num_input']) * int(values['server_ib_num_input']) / 2  # 先计算接入到服务器的线缆数量
+            acc_switch_num = acc_number_cab / (int(values['switch_port_num_input']) / 4)  # 计算所需接入交换机数量
+            acc_switch_num = math.ceil(acc_switch_num)
+            for i in ['acc_switch', 'agg_switch']:
+                number = 0
+                while True:
+                    print(acc_switch_num, agg_switch_num)
+                    if i != 'lx':
+                        agg_switch_num = acc_number_cab / (int(values['switch_port_num_input']) / 2)  # 计算所需汇聚交换机数量(可能带小数)
+                        agg_switch_num = math.ceil(agg_switch_num)
+                    easol_num = acc_number_cab / (acc_switch_num * agg_switch_num)  # 计算每台接入交换机到汇聚出几根线
+                    easol_num = math.ceil(easol_num)  # 向上取整
+                    print(easol_num)
+                    agg_number_cab = easol_num * acc_switch_num * agg_switch_num   # 计算接入到汇聚所需要出的线缆
+                    if easol_num * acc_switch_num * agg_switch_num / agg_switch_num > 32:  # 如果所有接入交换机到其中一台汇聚交换机的数量大于交换机端口数量
+                        # print(acc_switch_num, agg_switch_num, acc_number_cab, agg_number_cab, '方案不成立, 此方案需要每台汇聚交换机接入的线缆数量大于端口数！')
+                        if i == 'acc_switch':
+                            acc_switch_num += 1
+                            number += 1
+                            if number == 200:
+                                if i == 'acc_switch':
+                                    acc_switch_num = acc_switch_num - number
+                                break
+                        else:
+                            agg_switch_num += 1
+                            number += 1
+                            i = 'lx'
+                    else:
+                        window['-OUTPUT-'].print(
+                            '接入交换机数量' + ':' + str(acc_switch_num) + ' ' + '汇聚交换机数量' + ':' + ' ' +
+                            str(agg_switch_num) + '台', acc_number_cab, agg_number_cab, easol_num)
+                        if i == 'acc_switch':
+                            acc_switch_num = acc_switch_num - number
+                        break
+                    # window['-OUTPUT-'].print('接入交换机数量' + ':' + str(acc_switch_num) + ' ' + '汇聚交换机数量' + ':' + ' ' +
+                                     # str(agg_switch_num) + '台', acc_number_cab, agg_number_cab)
     if event == '切换用户':
         window.close()  # 当前窗口关闭
         # layout不可被重复使用(只可以使用一次), 这里通过时间的变化来使每个layout不同
@@ -175,7 +273,8 @@ while True:
         # 拼接老化环境数据, 使用.format方法格式化数据，丝滑
         com = '/root/scripts/replace.sh {} {} {} {}'.format(values['-RAID_TYPE-'], values['cpu_input'],
                                                             values['mem_input'], values['disk_input'])
-        gui_thread.run_backend(q, com)
+        com_test = 'echo {} > /root/haha'.format(com)
+        gui_thread.run_backend(q, com_test)
     if event == '提交PXE数据':
         # 拼接所有PXE装机所需的数据，目前还剩自定义挂载的数据
         custom_str = ''
@@ -189,7 +288,7 @@ while True:
                                                  values['r_input'],
                                                  values['boot_input'], values['swap_input'], custom_str)
         window['-OUTPUT-'].print(com)
-        thread = gui_thread.MyThread(ssh_command, ('192.168.2.149', 'root', '123..com', com,
+        thread = gui_thread.MyThread(ssh_command, ('192.168.2.10', 'root', '123..com', com,
                                                    None))  # 将获取返回值并输出到文本框的操作封装到函数中，启动子线程时直接将结果输出到文本框
         thread.setDaemon(True)  # True表示主线程运行结束时不对这个子线程进行检查而直接退出
         thread.start()  # 启动线程
@@ -247,7 +346,8 @@ while True:
             layout=[[sg.Text('目标机器用户名'), sg.Input(key='user_xk', size=(15, 1), default_text='ubuntu'),
                      sg.Text('目标机器密码'), sg.Input(key='password_xk', password_char='*', size=(15, 1),
                                                        default_text='123..com'),
-                     sg.Button('提交用户名密码'), sg.Button('显示密码', button_color='red'), sg.Text('压测时间(秒)', text_color='yellow'),
+                     sg.Button('提交用户名密码'), sg.Button('显示密码', button_color='red'),
+                     sg.Text('压测时间(秒)', text_color='yellow'),
                      sg.Input('10800', key='time_xk', pad=(0, 0), size=(8, 1)), sg.Text('秒', pad=(0, 0))],
                     [sg.Multiline(key='-xiankaip-', size=(150, 30), text_color='purple')],
                     [sg.Button('提交IP', size=(8, 1)), sg.Button('测试IP连通性', size=(10, 1)),
@@ -289,9 +389,12 @@ while True:
             com1 = '/root/scripts/for.sh-new-new -o u -s sc -u {} -p {} -c /root/aleo/gpu_deploy/'.format(
                 user_xianka, password_xianka)  # 传输安装包
             com2 = "/root/scripts/for.sh-new -o u -s ss -u {} -p {} -c 'echo {} | sudo -S apt update --fix-missing -y &&" \
-                   "echo 1111111 | sudo -S apt-get install nvidia-cuda-toolkit g++ make -y'".format(user_xianka, password_xianka, password_xianka)
+                   "echo 1111111 | sudo -S apt-get install nvidia-cuda-toolkit g++ make -y'".format(user_xianka,
+                                                                                                    password_xianka,
+                                                                                                    password_xianka)
             com3 = "/root/scripts/for.sh-new -o u -s ss -u {} -p {} -c 'cd gpu_deploy ; echo 111111 | sudo -S " \
-                   "./NVIDIA-3090-Linux-x86_64-515.57.run -a -s --no-x-check; cd ./gpu_burn ; make ; cd ~'".format(user_xianka, password_xianka)
+                   "./NVIDIA-3090-Linux-x86_64-515.57.run -a -s --no-x-check; cd ./gpu_burn ; make ; cd ~'".format(
+                user_xianka, password_xianka)
             # 创建两个event
             event1 = threading.Event()
             event2 = threading.Event()
@@ -303,7 +406,8 @@ while True:
             # 最后执行线程3
             t3.start()
         if event_xianka == '环境检查':
-            com = "/root/scripts/for.sh-new -o u -s ss -u {} -p {} -c 'nvidia-smi > /dev/null || echo 驱动安装异常'".format(user_xianka, password_xianka)
+            com = "/root/scripts/for.sh-new -o u -s ss -u {} -p {} -c 'nvidia-smi > /dev/null || echo 驱动安装异常'".format(
+                user_xianka, password_xianka)
             gui_thread.run_backend(q, com)
         if event_xianka == '显卡压测':
             com = "/root/scripts/for.sh-new -o u -s ss -u {} -p {} -c 'cd gpu_deploy/gpu_burn/  ; " \
@@ -311,7 +415,8 @@ while True:
             gui_thread.run_backend(q, com)
             # window_xianka['-xiankaip-'].print(com)
         if event_xianka == '检测压测是否正常':
-            com = "/root/scripts/for.sh-new -o u -s ss -u {} -p {} -c 'ps -ef|grep gpu_burn | grep -v grep '".format(user_xianka, password_xianka)
+            com = "/root/scripts/for.sh-new -o u -s ss -u {} -p {} -c 'ps -ef|grep gpu_burn | grep -v grep '".format(
+                user_xianka, password_xianka)
             gui_thread.run_backend(q, com)
         if event_xianka == '开始定时收集日志':
             com = "/root/scripts/for.sh-new -o u -s x -u {} -p {} -c 'nvidia-smi'".format(user_xianka, password_xianka)
@@ -346,14 +451,6 @@ while True:
             window_mysql_password.close()  # 关闭子窗口
         if event == '提交':
             password_mysql = values['-PASSWORD-']
-            # try:
-            #     thread = gui_thread.MyThread(ssh_command, ('192.168.2.149', 'root', '123..com',
-            #                                                '/root/scripts/mysql.sh' + ' ' + password_mysql, None,
-            #                                                password_mysql))
-            #     thread.setDaemon(True)
-            #     thread.start()  # 启动线程
-            # except Exception as e:
-            #     result = str(password_mysql) + str(e) + '请再次尝试！'
             client = paramiko.SSHClient()
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             try:
