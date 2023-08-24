@@ -231,7 +231,7 @@ while True:
             acc_number_cab = int(values['server_num_input']) * int(values['server_ib_num_input']) / 2  # 先计算接入到服务器的线缆数量
             acc_switch_num = acc_number_cab / (int(values['switch_port_num_input']) / 4)  # 计算所需接入交换机数量
             acc_switch_num = math.ceil(acc_switch_num)
-            for i in ['acc_switch', 'agg_switch']:
+            for i in ['acc_switch', 'agg_switch', 'jiajia', 'jiajian']:
                 number = 0
                 while True:
                     print(acc_switch_num, agg_switch_num)
@@ -243,24 +243,54 @@ while True:
                     print(easol_num)
                     agg_number_cab = easol_num * acc_switch_num * agg_switch_num   # 计算接入到汇聚所需要出的线缆
                     if easol_num * acc_switch_num * agg_switch_num / agg_switch_num > 32:  # 如果所有接入交换机到其中一台汇聚交换机的数量大于交换机端口数量
-                        # print(acc_switch_num, agg_switch_num, acc_number_cab, agg_number_cab, '方案不成立, 此方案需要每台汇聚交换机接入的线缆数量大于端口数！')
                         if i == 'acc_switch':
                             acc_switch_num += 1
                             number += 1
                             if number == 200:
-                                if i == 'acc_switch':
-                                    acc_switch_num = acc_switch_num - number
+                                # if i == 'acc_switch':
+                                acc_switch_num = acc_switch_num - number
                                 break
-                        else:
+                        elif i == 'agg_switch':
                             agg_switch_num += 1
                             number += 1
                             i = 'lx'
+                            if number == 200:
+                                # if i == 'agg_switch':
+                                agg_switch_num = agg_switch_num - number
+                                break
+                        elif i == 'jiajia':
+                            acc_switch_num += 1
+                            agg_switch_num += 1
+                            number += 1
+                            i = 'lx'
+                            if number == 200:
+                                # if i == 'jiajia':
+                                acc_switch_num = acc_switch_num - number
+                                agg_switch_num = agg_switch_num - number
+                                break
+                        else:
+                            acc_switch_num += 1
+                            agg_switch_num -= 1
+                            number += 1
+                            i = 'lx'
+                            if number == 200:
+                                acc_switch_num = acc_switch_num - number
+                                agg_switch_num = agg_switch_num + number
+                                break
                     else:
                         window['-OUTPUT-'].print(
                             '接入交换机数量' + ':' + str(acc_switch_num) + ' ' + '汇聚交换机数量' + ':' + ' ' +
-                            str(agg_switch_num) + '台', acc_number_cab, agg_number_cab, easol_num)
+                            str(agg_switch_num) + '台', acc_number_cab, agg_number_cab, easol_num, i)
                         if i == 'acc_switch':
                             acc_switch_num = acc_switch_num - number
+                        elif i == 'agg_switch':
+                            agg_switch_num = agg_switch_num - number
+                        elif i == 'jiajia':
+                            acc_switch_num = acc_switch_num - number
+                            agg_switch_num = agg_switch_num - number
+                        elif i == 'jiajian':
+                            acc_switch_num = acc_switch_num - number
+                            agg_switch_num = agg_switch_num + number
                         break
                     # window['-OUTPUT-'].print('接入交换机数量' + ':' + str(acc_switch_num) + ' ' + '汇聚交换机数量' + ':' + ' ' +
                                      # str(agg_switch_num) + '台', acc_number_cab, agg_number_cab)
